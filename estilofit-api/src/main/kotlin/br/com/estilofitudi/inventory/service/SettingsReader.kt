@@ -29,6 +29,9 @@ class SettingsReader(private val settingsService: SettingsService) {
     /** Percentual de comissão do vendedor (sobre o faturamento da venda). */
     fun sellerCommissionPct(): BigDecimal = decimal(SettingKey.SELLER_COMMISSION_PCT)
 
+    /** Dias de cobertura de estoque desejados para a sugestão de compra do próximo lote. */
+    fun purchaseCoverageDays(): Int = integer(SettingKey.PURCHASE_COVERAGE_DAYS)
+
     private fun decimal(def: SettingKey): BigDecimal =
         settingsService.rawValue(def).toBigDecimalOrNull() ?: BigDecimal(def.fallback)
 
