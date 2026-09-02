@@ -53,3 +53,13 @@ data class SalesTargetResponse(
     val proLaborePct: BigDecimal,    // % do lucro destinado ao pró-labore
     val months: List<SalesTargetMonthResponse>,
 )
+
+/** Lucratividade de um canal de venda no período. */
+data class ChannelProfitResponse(
+    val channel: String,
+    val revenue: BigDecimal,   // faturamento
+    val cost: BigDecimal,      // custo das mercadorias vendidas
+    val profit: BigDecimal,    // lucro = faturamento - custo
+    val marginPct: BigDecimal, // margem = lucro / faturamento × 100
+    val saleCount: Long,
+)

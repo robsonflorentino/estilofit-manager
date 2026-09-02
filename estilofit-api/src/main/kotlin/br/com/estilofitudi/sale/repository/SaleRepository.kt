@@ -137,6 +137,36 @@ interface SaleRepository : JpaRepository<Sale, UUID> {
         @Param("start") start: LocalDateTime,
         @Param("end") end: LocalDateTime,
     ): List<MonthlyAggregateRow>
+
+    /**
+     * Faturamento, custo das mercadorias vendidas e nº de vendas por canal, no período.
+     * Base do relatório de lucratividade por canal. Apenas vendas confirmadas.
+     */
+    @Query("""
+        SELECT s.channel.name AS label,
+               COALESCE(SUM(s.finalAmount), 0) AS revenue,
+               COALESCE(SUM(
+                   (SELECT COALESCE(SUM(i.quantity * COALESCE(i.variant.averageCost, 0)), 0)
+                    FROM SaleItem i WHERE i.sale = s)
+               ), 0) AS cost,
+               COUNT(s) AS saleCount
+        FROM Sale s
+        WHERE s.status = br.com.estilofitudi.sale.domain.SaleStatus.CONFIRMED
+          AND s.confirmedAt >= :start AND s.confirmedAt < :end
+        GROUP BY s.channel.name
+    """)
+    fun profitByChannel(
+        @Param("start") start: LocalDateTime,
+        @Param("end") end: LocalDateTime,
+    ): List<ChannelProfitRow>
+}
+
+/** Faturamento, custo e nº de vendas agregados por canal. */
+interface ChannelProfitRow {
+    val label: String
+    val revenue: java.math.BigDecimal
+    val cost: java.math.BigDecimal
+    val saleCount: Long
 }
 
 /** Faturamento e custo agregados por ano/mês. */

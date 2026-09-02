@@ -1,5 +1,6 @@
 import { api } from "../lib/api";
 import type {
+  ChannelProfit,
   DailyRevenue,
   ReportPeriod,
   ReportSummary,
@@ -38,6 +39,11 @@ export const reportService = {
 
   async salesTarget(months: number): Promise<SalesTarget> {
     const { data } = await api.get<SalesTarget>("/reports/sales-target", { params: { months } });
+    return data;
+  },
+
+  async profitByChannel(period: ReportPeriod): Promise<ChannelProfit[]> {
+    const { data } = await api.get<ChannelProfit[]>("/reports/profit-by-channel", { params: period });
     return data;
   },
 };

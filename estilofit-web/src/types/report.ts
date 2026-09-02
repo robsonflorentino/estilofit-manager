@@ -46,3 +46,12 @@ export interface SalesTarget {
   proLaborePct: number;
   months: SalesTargetMonth[];
 }
+
+export interface ChannelProfit {
+  channel: string;
+  revenue: number;
+  cost: number;
+  profit: number;
+  marginPct: number;
+  saleCount: number;
+}
