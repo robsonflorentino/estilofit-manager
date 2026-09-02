@@ -50,6 +50,13 @@ dependencies {
     // Testes
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
+
+    // MockK — mocking idiomático em Kotlin
+    testImplementation("io.mockk:mockk:1.13.10")
+
+    // Testcontainers — PostgreSQL real e efêmero nos testes de integração
+    testImplementation("org.testcontainers:junit-jupiter:1.19.7")
+    testImplementation("org.testcontainers:postgresql:1.19.7")
 }
 
 tasks.withType<KotlinCompile> {
