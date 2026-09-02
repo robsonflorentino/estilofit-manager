@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { CategoriesPage } from "./pages/CategoriesPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
 import { AppLayout } from "./layouts/AppLayout";
 import { PrivateRoute } from "./routes/PrivateRoute";
+import { RoleRoute } from "./routes/RoleRoute";
 
 function App() {
   return (
@@ -17,6 +19,11 @@ function App() {
         <Route element={<PrivateRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+
+            {/* Admin + Gestor */}
+            <Route element={<RoleRoute roles={["ADMIN", "MANAGER"]} />}>
+              <Route path="/categories" element={<CategoriesPage />} />
+            </Route>
           </Route>
         </Route>
 

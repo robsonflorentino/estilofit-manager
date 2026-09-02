@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Shirt,
+  FolderTree,
   Package,
   Truck,
   ShoppingBag,
@@ -28,6 +29,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "MANAGER", "SELLER"] },
+  { to: "/categories", label: "Categorias", icon: FolderTree, roles: ["ADMIN", "MANAGER"] },
   { to: "/products", label: "Produtos", icon: Shirt, roles: ["ADMIN", "MANAGER"] },
   { to: "/stock", label: "Estoque", icon: Package, roles: ["ADMIN", "MANAGER", "SELLER"] },
   { to: "/suppliers", label: "Fornecedores", icon: Truck, roles: ["ADMIN", "MANAGER"] },
