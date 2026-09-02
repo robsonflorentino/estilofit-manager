@@ -3,6 +3,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { ProductsPage } from "./pages/ProductsPage";
+import { SuppliersPage } from "./pages/SuppliersPage";
 import { UsersPage } from "./pages/UsersPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
 import { AppLayout } from "./layouts/AppLayout";
@@ -26,6 +27,7 @@ function App() {
             <Route element={<RoleRoute roles={["ADMIN", "MANAGER"]} />}>
               <Route path="/categories" element={<CategoriesPage />} />
               <Route path="/products" element={<ProductsPage />} />
+              <Route path="/suppliers" element={<SuppliersPage />} />
             </Route>
 
             {/* Admin */}
