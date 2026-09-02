@@ -32,3 +32,17 @@ export interface ReportPeriod {
   startDate: string; // YYYY-MM-DD
   endDate: string;   // YYYY-MM-DD
 }
+
+export interface SalesTargetMonth {
+  month: string; // YYYY-MM
+  revenue: number;
+  target: number;
+  profitMarginPct: number;
+  achieved: boolean;
+}
+
+export interface SalesTarget {
+  targetProLabore: number;
+  proLaborePct: number;
+  months: SalesTargetMonth[];
+}

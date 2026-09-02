@@ -114,6 +114,37 @@ interface SaleRepository : JpaRepository<Sale, UUID> {
         @Param("start") start: LocalDateTime,
         @Param("end") end: LocalDateTime,
     ): List<GroupRevenueRow>
+
+    /**
+     * Faturamento e custo das mercadorias vendidas agrupados por ano/mês, no período.
+     * Base do relatório de meta de vendas. Apenas vendas confirmadas.
+     */
+    @Query("""
+        SELECT EXTRACT(YEAR FROM s.confirmedAt) AS year,
+               EXTRACT(MONTH FROM s.confirmedAt) AS month,
+               COALESCE(SUM(s.finalAmount), 0) AS revenue,
+               COALESCE(SUM(
+                   (SELECT COALESCE(SUM(i.quantity * COALESCE(i.variant.averageCost, 0)), 0)
+                    FROM SaleItem i WHERE i.sale = s)
+               ), 0) AS cost
+        FROM Sale s
+        WHERE s.status = br.com.estilofitudi.sale.domain.SaleStatus.CONFIRMED
+          AND s.confirmedAt >= :start AND s.confirmedAt < :end
+        GROUP BY EXTRACT(YEAR FROM s.confirmedAt), EXTRACT(MONTH FROM s.confirmedAt)
+        ORDER BY EXTRACT(YEAR FROM s.confirmedAt) ASC, EXTRACT(MONTH FROM s.confirmedAt) ASC
+    """)
+    fun monthlyAggregate(
+        @Param("start") start: LocalDateTime,
+        @Param("end") end: LocalDateTime,
+    ): List<MonthlyAggregateRow>
+}
+
+/** Faturamento e custo agregados por ano/mês. */
+interface MonthlyAggregateRow {
+    val year: Int
+    val month: Int
+    val revenue: java.math.BigDecimal
+    val cost: java.math.BigDecimal
 }
 
 /** Projeção dos agregados de vendas para os KPIs do dashboard. */

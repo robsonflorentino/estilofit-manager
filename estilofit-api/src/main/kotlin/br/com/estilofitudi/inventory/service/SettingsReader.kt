@@ -23,6 +23,9 @@ class SettingsReader(private val settingsService: SettingsService) {
     /** Dias sem venda para uma variação virar alerta de promoção. */
     fun promotionAlertDays(): Int = integer(SettingKey.PROMOTION_ALERT_DAYS)
 
+    /** Pró-labore desejado por mês (R$), base da meta de vendas. */
+    fun targetProLabore(): BigDecimal = decimal(SettingKey.TARGET_PRO_LABORE)
+
     private fun decimal(def: SettingKey): BigDecimal =
         settingsService.rawValue(def).toBigDecimalOrNull() ?: BigDecimal(def.fallback)
 

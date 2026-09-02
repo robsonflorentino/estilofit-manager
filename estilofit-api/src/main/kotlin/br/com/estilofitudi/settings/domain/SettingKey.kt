@@ -32,6 +32,10 @@ enum class SettingKey(
     PROMOTION_ALERT_DAYS(
         "PROMOTION_ALERT_DAYS", "Dias sem venda para alerta de promoção",
         SettingType.INTEGER, BigDecimal.ONE, null, "60",
+    ),
+    TARGET_PRO_LABORE(
+        "TARGET_PRO_LABORE", "Pró-labore desejado (R$/mês)",
+        SettingType.DECIMAL, BigDecimal.ZERO, null, "3000",
     );
 
     companion object {

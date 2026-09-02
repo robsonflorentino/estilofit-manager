@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
-  BarChart2, DollarSign, ShoppingBag, TrendingUp, Wallet, Loader2,
+  BarChart2, DollarSign, ShoppingBag, TrendingUp, Wallet, Loader2, Target, Settings as SettingsIcon,
 } from "lucide-react";
 import {
   ResponsiveContainer,
   LineChart, Line,
   BarChart, Bar,
+  ComposedChart,
   PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
@@ -33,6 +35,11 @@ const dayLabel = (iso: string) => {
 
 const paymentLabel = (label: string) =>
   PAYMENT_METHOD_LABELS[label as PaymentMethod] ?? label;
+
+const monthLabel = (ym: string) => {
+  const [y, m] = ym.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+};
 
 const PIE_COLORS = ["#7c3aed", "#a78bfa", "#c4b5fd", "#8b5cf6", "#6d28d9", "#ddd6fe"];
 
@@ -76,11 +83,14 @@ export function ReportsPage() {
   const period: ReportPeriod = { startDate, endDate };
   const key = [startDate, endDate];
 
+  const [targetMonths, setTargetMonths] = useState(6);
+
   const summary = useQuery({ queryKey: ["report", "summary", ...key], queryFn: () => reportService.summary(period) });
   const byDay = useQuery({ queryKey: ["report", "by-day", ...key], queryFn: () => reportService.revenueByDay(period) });
   const top = useQuery({ queryKey: ["report", "top", ...key], queryFn: () => reportService.topProducts(period, 10) });
   const byChannel = useQuery({ queryKey: ["report", "channel", ...key], queryFn: () => reportService.byChannel(period) });
   const byPayment = useQuery({ queryKey: ["report", "payment", ...key], queryFn: () => reportService.byPayment(period) });
+  const salesTarget = useQuery({ queryKey: ["report", "sales-target", targetMonths], queryFn: () => reportService.salesTarget(targetMonths) });
 
   const dayData = (byDay.data ?? []).map((d) => ({ ...d, label: dayLabel(d.day) }));
   const topData = (top.data ?? []).map((t) => ({
@@ -89,6 +99,8 @@ export function ReportsPage() {
   }));
   const channelData = byChannel.data ?? [];
   const paymentData = (byPayment.data ?? []).map((p) => ({ ...p, label: paymentLabel(p.label) }));
+  const targetData = (salesTarget.data?.months ?? []).map((m) => ({ ...m, label: monthLabel(m.month) }));
+  const currentTarget = salesTarget.data?.months[salesTarget.data.months.length - 1];
 
   return (
     <div>
@@ -107,6 +119,72 @@ export function ReportsPage() {
         <div>
           <label className="mb-1.5 block text-sm text-content-secondary">Até</label>
           <input type="date" className="input-base" value={endDate} min={startDate} max={todayISO()} onChange={(e) => setEndDate(e.target.value)} />
+        </div>
+      </div>
+
+      {/* Meta de vendas para o pró-labore */}
+      <div className="mb-6">
+        <div className="card">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="flex items-center gap-2 font-semibold text-content-primary">
+                <Target className="h-5 w-5 text-brand-purple" /> Meta de vendas para o pró-labore
+              </h3>
+              <p className="mt-1 text-sm text-content-secondary">
+                Quanto é preciso faturar por mês para retirar o pró-labore desejado
+                {salesTarget.data && (
+                  <> de <span className="font-medium text-content-primary">{money(salesTarget.data.targetProLabore)}</span> ({salesTarget.data.proLaborePct}% do lucro)</>
+                )}.
+                {" "}
+                <Link to="/settings" className="inline-flex items-center gap-1 text-brand-purple hover:underline">
+                  <SettingsIcon className="h-3.5 w-3.5" /> Ajustar
+                </Link>
+              </p>
+            </div>
+            <select className="input-base w-32" value={targetMonths} onChange={(e) => setTargetMonths(Number(e.target.value))}>
+              {[6, 12].map((n) => <option key={n} value={n}>{n} meses</option>)}
+            </select>
+          </div>
+
+          {/* Resumo do mês corrente */}
+          {currentTarget && (
+            <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="rounded-card bg-bg-input p-3">
+                <p className="text-xs text-content-muted">Meta deste mês</p>
+                <p className="text-lg font-bold text-content-primary">{money(currentTarget.target)}</p>
+              </div>
+              <div className="rounded-card bg-bg-input p-3">
+                <p className="text-xs text-content-muted">Realizado</p>
+                <p className="text-lg font-bold text-content-primary">{money(currentTarget.revenue)}</p>
+              </div>
+              <div className="rounded-card bg-bg-input p-3">
+                <p className="text-xs text-content-muted">Situação</p>
+                <p className={`text-lg font-bold ${currentTarget.achieved ? "text-state-success" : "text-state-warning"}`}>
+                  {currentTarget.achieved ? "Meta atingida" : "Abaixo da meta"}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {salesTarget.isLoading ? (
+            <div className="flex h-72 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-brand-purple" /></div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={targetData} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" />
+                <XAxis dataKey="label" stroke="#9ca3af" fontSize={12} />
+                <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(v) => shortMoney(Number(v))} />
+                <Tooltip
+                  formatter={moneyTip}
+                  contentStyle={{ background: "#1a1a24", border: "1px solid #2a2a3a", borderRadius: 8 }}
+                  labelStyle={{ color: "#e5e7eb" }}
+                />
+                <Legend />
+                <Bar dataKey="revenue" name="Realizado" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+                <Line type="monotone" dataKey="target" name="Meta" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
