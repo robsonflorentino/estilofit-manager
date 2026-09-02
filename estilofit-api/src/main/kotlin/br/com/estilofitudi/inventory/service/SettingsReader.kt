@@ -17,6 +17,10 @@ class SettingsReader(private val entityManager: EntityManager) {
     fun lowStockThreshold(): Int =
         readDecimal("LOW_STOCK_THRESHOLD", fallback = BigDecimal("2")).toInt()
 
+    /** Percentual do lucro destinado ao pró-labore, para o KPI estimado do dashboard. */
+    fun proLaborePct(): BigDecimal =
+        readDecimal("PRO_LABORE_PCT", fallback = BigDecimal("30"))
+
     private fun readDecimal(key: String, fallback: BigDecimal): BigDecimal {
         return try {
             val value = entityManager

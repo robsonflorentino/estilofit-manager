@@ -47,4 +47,8 @@ interface ProductVariantRepository : JpaRepository<ProductVariant, UUID> {
         @Param("lowStockThreshold") lowStockThreshold: Int?,
         pageable: Pageable,
     ): Page<ProductVariant>
+
+    /** Total de itens em estoque (soma das quantidades das variações ativas) — KPI do dashboard. */
+    @Query("SELECT COALESCE(SUM(v.stockQuantity), 0) FROM ProductVariant v WHERE v.active = true")
+    fun sumActiveStock(): Long
 }
