@@ -80,10 +80,18 @@ export interface PurchaseSuggestion {
   estimatedCost: number;
 }
 
+export interface PurchaseSuggestionGroup {
+  supplierId: string | null;
+  supplierName: string;
+  itemCount: number;
+  estimatedCost: number;
+  items: PurchaseSuggestion[];
+}
+
 export interface PurchaseSuggestionReport {
   referenceDays: number;
   coverageTargetDays: number;
   totalItems: number;
   totalEstimatedCost: number;
-  items: PurchaseSuggestion[];
+  groups: PurchaseSuggestionGroup[];
 }

@@ -86,8 +86,15 @@ class ReportPurchaseSuggestionTest @Autowired constructor(
         return objectMapper.readTree(json)
     }
 
+    /** Achata todos os itens de todos os grupos de fornecedor. */
+    private fun allItems(resp: JsonNode): List<JsonNode> =
+        resp["groups"].flatMap { g -> g["items"].toList() }
+
     private fun itemOf(resp: JsonNode, variantId: String): JsonNode? =
-        resp["items"].firstOrNull { it["variantId"].asText() == variantId }
+        allItems(resp).firstOrNull { it["variantId"].asText() == variantId }
+
+    private fun groupOf(resp: JsonNode, variantId: String): JsonNode? =
+        resp["groups"].firstOrNull { g -> g["items"].any { it["variantId"].asText() == variantId } }
 
     @Test
     fun `sugere compra com base na velocidade e cobertura alvo`() {
@@ -113,7 +120,13 @@ class ReportPurchaseSuggestionTest @Autowired constructor(
         assertTrue(resp["totalItems"].asInt() >= 1)
         assertTrue(resp["totalEstimatedCost"].decimalValue() >= mine["estimatedCost"].decimalValue())
         // todos os itens listados têm sugestão > 0 (só o que importa)
-        assertTrue((0 until resp["items"].size()).all { resp["items"][it]["suggestedQty"].asInt() > 0 })
+        assertTrue(allItems(resp).all { it["suggestedQty"].asInt() > 0 })
+
+        // agrupado pelo último fornecedor: o item deve estar num grupo com fornecedor nomeado e subtotal
+        val group = groupOf(resp, variantId)
+        assertNotNull(group, "o item deve estar em um grupo de fornecedor")
+        assertTrue(group!!["supplierName"].asText().isNotBlank())
+        assertTrue(group["estimatedCost"].decimalValue() >= mine["estimatedCost"].decimalValue())
     }
 
     @Test

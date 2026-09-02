@@ -80,13 +80,22 @@ data class PurchaseSuggestionResponse(
     val estimatedCost: BigDecimal, // sugestão × custo médio
 )
 
-/** Sugestão de compra: parâmetros usados + resumo + itens (apenas os que precisam de reposição). */
+/** Grupo de sugestão de compra por fornecedor (o último que forneceu cada item). */
+data class PurchaseSuggestionGroupResponse(
+    val supplierId: java.util.UUID?, // null = sem fornecedor definido
+    val supplierName: String,
+    val itemCount: Int,
+    val estimatedCost: BigDecimal,   // subtotal do pedido a este fornecedor
+    val items: List<PurchaseSuggestionResponse>,
+)
+
+/** Sugestão de compra: parâmetros usados + resumo + grupos por fornecedor. */
 data class PurchaseSuggestionReportResponse(
     val referenceDays: Int,
     val coverageTargetDays: Int,
     val totalItems: Int,               // quantos itens precisam de compra
     val totalEstimatedCost: BigDecimal, // custo estimado total do lote sugerido
-    val items: List<PurchaseSuggestionResponse>,
+    val groups: List<PurchaseSuggestionGroupResponse>,
 )
 
 /** Posição de um vendedor no ranking do período. */
