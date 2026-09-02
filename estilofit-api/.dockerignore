@@ -1,0 +1,10 @@
+build/
+.gradle/
+.idea/
+*.iml
+.env
+.env.*
+!.env.example
+src/test
+*.log
+.DS_Store
