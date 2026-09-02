@@ -21,6 +21,10 @@ class SettingsReader(private val entityManager: EntityManager) {
     fun proLaborePct(): BigDecimal =
         readDecimal("PRO_LABORE_PCT", fallback = BigDecimal("30"))
 
+    /** Dias sem venda para uma variação virar alerta de promoção. */
+    fun promotionAlertDays(): Int =
+        readDecimal("PROMOTION_ALERT_DAYS", fallback = BigDecimal("60")).toInt()
+
     private fun readDecimal(key: String, fallback: BigDecimal): BigDecimal {
         return try {
             val value = entityManager
