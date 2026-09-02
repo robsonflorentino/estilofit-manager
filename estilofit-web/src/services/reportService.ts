@@ -4,6 +4,7 @@ import type {
   ReportPeriod,
   ReportSummary,
   RevenueSlice,
+  SalesTarget,
   TopProduct,
 } from "../types/report";
 
@@ -32,6 +33,11 @@ export const reportService = {
 
   async byPayment(period: ReportPeriod): Promise<RevenueSlice[]> {
     const { data } = await api.get<RevenueSlice[]>("/reports/by-payment", { params: period });
+    return data;
+  },
+
+  async salesTarget(months: number): Promise<SalesTarget> {
+    const { data } = await api.get<SalesTarget>("/reports/sales-target", { params: { months } });
     return data;
   },
 };

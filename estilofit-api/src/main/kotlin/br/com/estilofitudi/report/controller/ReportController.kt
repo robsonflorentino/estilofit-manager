@@ -3,6 +3,7 @@ package br.com.estilofitudi.report.controller
 import br.com.estilofitudi.report.dto.DailyRevenueResponse
 import br.com.estilofitudi.report.dto.ReportSummaryResponse
 import br.com.estilofitudi.report.dto.RevenueSliceResponse
+import br.com.estilofitudi.report.dto.SalesTargetResponse
 import br.com.estilofitudi.report.dto.TopProductResponse
 import br.com.estilofitudi.report.service.ReportService
 import io.swagger.v3.oas.annotations.Operation
@@ -64,4 +65,14 @@ class ReportController(private val reportService: ReportService) {
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
     ): ResponseEntity<List<RevenueSliceResponse>> =
         ResponseEntity.ok(reportService.byPayment(startDate, endDate))
+
+    @GetMapping("/sales-target")
+    @Operation(
+        summary = "Meta de vendas para o pró-labore",
+        description = "🟡 Admin + Gestor — faturamento necessário por mês para o pró-labore desejado vs. realizado",
+    )
+    fun salesTarget(
+        @RequestParam(defaultValue = "6") months: Int,
+    ): ResponseEntity<SalesTargetResponse> =
+        ResponseEntity.ok(reportService.salesTarget(months))
 }

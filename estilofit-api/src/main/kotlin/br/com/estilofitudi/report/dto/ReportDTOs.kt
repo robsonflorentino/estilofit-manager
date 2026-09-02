@@ -37,3 +37,19 @@ data class RevenueSliceResponse(
     val saleCount: Long,
     val percentage: BigDecimal, // participação no faturamento total do período (0-100)
 )
+
+/** Um mês do relatório de meta de vendas para pró-labore. */
+data class SalesTargetMonthResponse(
+    val month: String,          // "yyyy-MM"
+    val revenue: BigDecimal,    // faturamento realizado
+    val target: BigDecimal,     // faturamento necessário para o pró-labore desejado
+    val profitMarginPct: BigDecimal, // margem de lucro usada no cálculo (%)
+    val achieved: Boolean,      // realizado >= meta
+)
+
+/** Relatório de meta de vendas: parâmetros usados + série mensal. */
+data class SalesTargetResponse(
+    val targetProLabore: BigDecimal, // salário desejado (R$/mês)
+    val proLaborePct: BigDecimal,    // % do lucro destinado ao pró-labore
+    val months: List<SalesTargetMonthResponse>,
+)
