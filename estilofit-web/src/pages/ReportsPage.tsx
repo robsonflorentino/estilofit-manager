@@ -435,7 +435,7 @@ export function ReportsPage() {
 
           {purchaseSuggestion.isLoading ? (
             <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-brand-purple" /></div>
-          ) : !purchaseData || purchaseData.items.length === 0 ? (
+          ) : !purchaseData || purchaseData.groups.length === 0 ? (
             <p className="py-16 text-center text-sm text-content-muted">Nenhum item precisa de reposição no momento. Estoque saudável!</p>
           ) : (
             <>
@@ -449,54 +449,62 @@ export function ReportsPage() {
                   <span className="font-semibold text-content-primary">{money(purchaseData.totalEstimatedCost)}</span>
                 </div>
               </div>
-              <div className="overflow-hidden rounded-card border border-border-subtle">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-bg-surface-raised text-xs uppercase tracking-wider text-content-secondary">
-                    <tr>
-                      <th className="px-3 py-2">Produto</th>
-                      <th className="px-3 py-2">Estoque</th>
-                      <th className="px-3 py-2">Vendas ({purchaseData.referenceDays}d)</th>
-                    <th className="px-3 py-2">Venda/dia</th>
-                    <th className="px-3 py-2">Cobertura</th>
-                    <th className="px-3 py-2">Sugestão</th>
-                    <th className="px-3 py-2">Custo estimado</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-subtle">
-                  {purchaseData.items.map((p) => (
-                    <tr key={p.variantId} className="bg-bg-surface">
-                      <td className="px-3 py-2">
-                        <span className="font-mono text-xs text-brand-purple">{p.sku}</span>
-                        <span className="ml-2 text-content-secondary">{p.productName} · {p.size}/{p.color}</span>
-                      </td>
-                      <td className="px-3 py-2">
-                        {p.belowMinimum ? (
-                          <Badge variant="danger">{p.stockQuantity}</Badge>
-                        ) : (
-                          <span className="text-content-secondary">{p.stockQuantity}</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-content-secondary">{p.soldQty}</td>
-                      <td className="px-3 py-2 text-content-secondary">{p.dailyVelocity}</td>
-                      <td className="px-3 py-2">
-                        {p.coverageDays == null ? (
-                          <span className="text-content-muted">—</span>
-                        ) : p.coverageDays <= purchaseData.coverageTargetDays ? (
-                          <Badge variant="warning">{p.coverageDays} dias</Badge>
-                        ) : (
-                          <span className="text-content-secondary">{p.coverageDays} dias</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 font-semibold text-content-primary">
-                        {p.suggestedQty > 0 ? `${p.suggestedQty} un` : "—"}
-                      </td>
-                      <td className="px-3 py-2 text-content-secondary">
-                        {p.suggestedQty > 0 ? money(p.estimatedCost) : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                  </tbody>
-                </table>
+
+              <div className="space-y-5">
+                {purchaseData.groups.map((g) => (
+                  <div key={g.supplierId ?? "none"} className="overflow-hidden rounded-card border border-border-subtle">
+                    {/* Cabeçalho do fornecedor com subtotal */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 bg-bg-surface-raised px-3 py-2">
+                      <span className="font-semibold text-content-primary">{g.supplierName}</span>
+                      <span className="text-sm text-content-secondary">
+                        {g.itemCount} {g.itemCount === 1 ? "item" : "itens"} · <span className="font-medium text-content-primary">{money(g.estimatedCost)}</span>
+                      </span>
+                    </div>
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-bg-surface text-xs uppercase tracking-wider text-content-muted">
+                        <tr>
+                          <th className="px-3 py-2">Produto</th>
+                          <th className="px-3 py-2">Estoque</th>
+                          <th className="px-3 py-2">Vendas ({purchaseData.referenceDays}d)</th>
+                          <th className="px-3 py-2">Venda/dia</th>
+                          <th className="px-3 py-2">Cobertura</th>
+                          <th className="px-3 py-2">Sugestão</th>
+                          <th className="px-3 py-2">Custo estimado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border-subtle">
+                        {g.items.map((p) => (
+                          <tr key={p.variantId} className="bg-bg-surface">
+                            <td className="px-3 py-2">
+                              <span className="font-mono text-xs text-brand-purple">{p.sku}</span>
+                              <span className="ml-2 text-content-secondary">{p.productName} · {p.size}/{p.color}</span>
+                            </td>
+                            <td className="px-3 py-2">
+                              {p.belowMinimum ? (
+                                <Badge variant="danger">{p.stockQuantity}</Badge>
+                              ) : (
+                                <span className="text-content-secondary">{p.stockQuantity}</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-content-secondary">{p.soldQty}</td>
+                            <td className="px-3 py-2 text-content-secondary">{p.dailyVelocity}</td>
+                            <td className="px-3 py-2">
+                              {p.coverageDays == null ? (
+                                <span className="text-content-muted">—</span>
+                              ) : p.coverageDays <= purchaseData.coverageTargetDays ? (
+                                <Badge variant="warning">{p.coverageDays} dias</Badge>
+                              ) : (
+                                <span className="text-content-secondary">{p.coverageDays} dias</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 font-semibold text-content-primary">{p.suggestedQty} un</td>
+                            <td className="px-3 py-2 text-content-secondary">{money(p.estimatedCost)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
               </div>
             </>
           )}

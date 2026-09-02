@@ -1,5 +1,6 @@
 package br.com.estilofitudi.report.service
 
+import br.com.estilofitudi.inventory.repository.SupplyLotRepository
 import br.com.estilofitudi.inventory.service.SettingsReader
 import br.com.estilofitudi.report.dto.*
 import br.com.estilofitudi.sale.repository.GroupRevenueRow
@@ -14,12 +15,14 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 @Service
 @Transactional(readOnly = true)
 class ReportService(
     private val saleRepository: SaleRepository,
     private val saleItemRepository: SaleItemRepository,
+    private val supplyLotRepository: SupplyLotRepository,
     private val settingsReader: SettingsReader,
 ) {
 
@@ -226,12 +229,37 @@ class ReportService(
 
         val totalEstimatedCost = items.fold(BigDecimal.ZERO) { acc, it -> acc + it.estimatedCost }
 
+        // Último fornecedor de cada variação (lote mais recente); história já vem ordenada por data desc
+        data class Sup(val id: UUID, val name: String)
+        val lastSupplier: Map<UUID, Sup> = HashMap<UUID, Sup>().apply {
+            supplyLotRepository.variantSupplierHistory().forEach { row ->
+                putIfAbsent(row.variantId, Sup(row.supplierId, row.supplierName))
+            }
+        }
+
+        // Agrupa por fornecedor (null = sem fornecedor definido)
+        val groups = items
+            .groupBy { lastSupplier[it.variantId] }
+            .map { (sup, groupItems) ->
+                PurchaseSuggestionGroupResponse(
+                    supplierId = sup?.id,
+                    supplierName = sup?.name ?: "Sem fornecedor definido",
+                    itemCount = groupItems.size,
+                    estimatedCost = groupItems.fold(BigDecimal.ZERO) { acc, it -> acc + it.estimatedCost }
+                        .setScale(2, RoundingMode.HALF_UP),
+                    items = groupItems,
+                )
+            }
+            // fornecedores com maior pedido primeiro; "sem fornecedor" por último
+            .sortedWith(compareByDescending<PurchaseSuggestionGroupResponse> { it.supplierId != null }
+                .thenByDescending { it.estimatedCost })
+
         return PurchaseSuggestionReportResponse(
             referenceDays = refDays,
             coverageTargetDays = coverageTarget,
             totalItems = items.size,
             totalEstimatedCost = totalEstimatedCost.setScale(2, RoundingMode.HALF_UP),
-            items = items,
+            groups = groups,
         )
     }
 

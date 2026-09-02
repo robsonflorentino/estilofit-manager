@@ -67,6 +67,13 @@ Regras:
 - Como o `confirmedAt` das vendas é sempre "agora", períodos de referência maiores diluem a velocidade; em produção com histórico real isso se ajusta naturalmente.
 - A cobertura vem nula quando a velocidade é ~0 (sem giro relevante) e esses itens vão para o fim da lista.
 
+## Ajuste pós-entrega — agrupamento por fornecedor
+A sugestão passou a vir **agrupada por fornecedor**, virando uma ordem de compra por fornecedor.
+- O fornecedor de cada variação é o **último que a forneceu** (lote com `receivedAt` mais recente, via `SupplyLotRepository.variantSupplierHistory()` resolvido no service). Itens sem histórico de lote caem em "Sem fornecedor definido".
+- Resposta: `groups[]` com `supplierName`, `itemCount`, `estimatedCost` (subtotal) e `items`; grupos ordenados por maior subtotal, "sem fornecedor" por último.
+- Frontend: um bloco por fornecedor (cabeçalho com nome + subtotal) e a tabela dos itens dele.
+- Verificado: 3 itens de fornecedores distintos geraram 3 grupos com subtotais corretos (R$2.000 / R$1.400 / R$1.200; total R$4.600).
+
 ## Ajuste pós-entrega — "mostrar só o que importa"
 Na primeira versão o relatório listava todas as variações que venderam, inclusive as com estoque
 farto (sugestão zero), o que deixava a tela cheia de "—" e sem utilidade. Corrigido:
