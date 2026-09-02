@@ -63,6 +63,12 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 O primeiro build leva alguns minutos (compila a API e o frontend). Nas próximas vezes é rápido.
 
+> **Alternativa (recomendada): usar as imagens já publicadas no GHCR.**
+> Em vez de buildar no VPS, o workflow de Release publica as imagens a cada tag `v*`
+> (ver `docs/ci-cd.md`). Assim você pode usar um compose que só faz `pull` das imagens
+> `ghcr.io/robsonflorentino/estilofit-manager-api:<versão>` e `-web:<versão>`, sem compilar
+> no servidor — mais rápido e leve. Basta trocar o bloco `build:` por `image:` no compose.
+
 O Flyway aplica as migrations automaticamente na primeira subida. O usuário administrador
 padrão é criado na inicialização (ver credenciais internas do projeto).
 

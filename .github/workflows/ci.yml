@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+# Cancela execuções antigas do mesmo ref quando há um push novo
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (testes)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: estilofit-api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Testes (Testcontainers usa o Docker do runner)
+        run: ./gradlew test --no-daemon
+
+      - name: Publicar relatório de testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: estilofit-api/build/reports/tests/test
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend (typecheck + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: estilofit-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: estilofit-web/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build (inclui typecheck via tsc)
+        run: npm run build
