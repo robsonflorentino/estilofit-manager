@@ -4,10 +4,12 @@ import br.com.estilofitudi.inventory.domain.StockMovement
 import br.com.estilofitudi.inventory.domain.StockMovementType
 import br.com.estilofitudi.inventory.dto.*
 import br.com.estilofitudi.inventory.repository.StockMovementRepository
+import br.com.estilofitudi.product.domain.ProductVariant
 import br.com.estilofitudi.product.repository.ProductVariantRepository
 import br.com.estilofitudi.shared.dto.PageResponse
 import br.com.estilofitudi.shared.exception.BusinessException
 import br.com.estilofitudi.shared.exception.EntityNotFoundException
+import br.com.estilofitudi.user.domain.User
 import br.com.estilofitudi.user.repository.UserRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -89,5 +91,47 @@ class StockService(
             )
         )
         return movement.toResponse()
+    }
+
+    /**
+     * Registra a saída de estoque de uma venda (movimentação SALE, quantidade negativa).
+     * Deve ser chamado dentro da transação da venda. Assume que a validação de estoque
+     * suficiente já foi feita pelo chamador.
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    fun registerSaleExit(variant: ProductVariant, quantity: Int, saleId: UUID, user: User) {
+        variant.stockQuantity -= quantity
+        variantRepository.save(variant)
+        stockMovementRepository.save(
+            StockMovement(
+                variant = variant,
+                type = StockMovementType.SALE,
+                quantity = -quantity,
+                referenceType = "SALE",
+                referenceId = saleId,
+                user = user,
+            )
+        )
+    }
+
+    /**
+     * Estorna o estoque de uma venda cancelada (movimentação ADJUSTMENT positiva).
+     * Deve ser chamado dentro da transação do cancelamento.
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    fun registerSaleReversal(variant: ProductVariant, quantity: Int, saleId: UUID, user: User) {
+        variant.stockQuantity += quantity
+        variantRepository.save(variant)
+        stockMovementRepository.save(
+            StockMovement(
+                variant = variant,
+                type = StockMovementType.ADJUSTMENT,
+                quantity = quantity,
+                referenceType = "SALE_CANCEL",
+                referenceId = saleId,
+                notes = "Estorno de cancelamento de venda",
+                user = user,
+            )
+        )
     }
 }
