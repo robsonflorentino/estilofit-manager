@@ -3,7 +3,7 @@
 | Campo         | Valor                                  |
 |---------------|----------------------------------------|
 | Branch        | `feature/api-products-variants`        |
-| Status        | 🟡 Em design (aguardando validação)    |
+| Status        | ✅ Design aprovado (2026-09-01)         |
 | Depende de    | Feature 001 (auth), Feature 002 (categorias) |
 | Regras        | RN-001 a RN-006                        |
 
@@ -44,7 +44,7 @@ Nenhuma migration nova é necessária. O design foca na lógica de aplicação.
 
 ### 3.1. Formato e geração do SKU (RN-003) — **ponto central**
 
-Formato definido: `{PREFIXO}-{SEQUENCIAL}-{TAMANHO}-{COR}` → ex: `BLS-001-M-AZL`
+Formato definido: `{PREFIXO}-{SEQUENCIAL}-{TAMANHO}-{COR}` → ex: `BLU-001-M-AZU`
 
 Proponho as seguintes regras de derivação de cada parte:
 
@@ -53,7 +53,7 @@ Proponho as seguintes regras de derivação de cada parte:
 | `PREFIXO`    | 3 primeiras letras do **nome do produto**, maiúsculas, sem acento     | "Blusa Listrada" → `BLS` |
 | `SEQUENCIAL` | Contador por prefixo, 3 dígitos com zero à esquerda                    | `001`, `002`... |
 | `TAMANHO`    | O tamanho como informado, maiúsculo                                   | `M`, `GG` |
-| `COR`        | 3 primeiras letras da cor, maiúsculas, sem acento                     | "Azul" → `AZL` |
+| `COR`        | 3 primeiras letras da cor, maiúsculas, sem acento                     | "Azul" → `AZU` |
 
 **Pontos que preciso da sua decisão:**
 
@@ -149,12 +149,14 @@ O `SkuGenerator` fica isolado justamente para concentrar a lógica não-trivial 
 
 ---
 
-## 5. Pontos que preciso que você decida antes de eu codar
+## 5. Decisões Aprovadas (2026-09-01)
 
-1. **Prefixo do SKU:** categoria (recomendo) ou nome do produto?
-2. **Sequencial:** por prefixo (recomendo) ou global?
-3. **Colisão de cor em 3 letras:** aceitar com fallback de sufixo? (recomendo sim)
-4. **Categoria/produto inativo:** bloquear cadastro de filho? (recomendo bloquear)
-5. **SKU imutável:** confirmar que `PUT` de variação não altera size/color?
+Todas seguindo as recomendações:
 
-Assim que você responder esses 5 pontos, eu ajusto o design (se necessário) e parto para a implementação.
+1. **Prefixo do SKU:** derivado da **categoria** (3 primeiras letras, maiúsculas, sem acento). Ex: "Blusas" → `BLU`
+2. **Sequencial:** **por prefixo**, 3 dígitos com zero à esquerda. Ex: `BLU-001`, `BLU-002`, `CAL-001`
+3. **Colisão de cor:** aceitar 3 letras da cor; se o SKU final colidir, adicionar sufixo numérico. Índice único do banco como rede de segurança
+4. **Cadastro em item inativo:** **bloquear** (422) — não criar variação em produto inativo, nem produto em categoria inativa
+5. **SKU imutável:** confirmado — `PUT` de variação altera apenas `profitMargin` e `salePrice`, nunca `size`/`color` (que compõem o SKU)
+
+**Formato final do SKU:** `{PREFIXO_CATEGORIA}-{SEQUENCIAL}-{TAMANHO}-{COR}` → ex: `BLU-001-M-AZU` (categoria "Blusas", tamanho M, cor "Azul")
