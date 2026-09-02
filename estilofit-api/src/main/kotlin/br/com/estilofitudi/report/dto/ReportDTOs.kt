@@ -63,3 +63,13 @@ data class ChannelProfitResponse(
     val marginPct: BigDecimal, // margem = lucro / faturamento × 100
     val saleCount: Long,
 )
+
+/** Posição de um vendedor no ranking do período. */
+data class SellerRankingResponse(
+    val position: Int,          // 1 = primeiro colocado
+    val sellerId: java.util.UUID,
+    val sellerName: String,
+    val revenue: BigDecimal,    // faturamento
+    val saleCount: Long,
+    val averageTicket: BigDecimal, // faturamento / nº de vendas
+)
