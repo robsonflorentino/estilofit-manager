@@ -3,6 +3,13 @@
 export type PaymentMethod = "CASH" | "PIX" | "DEBIT_CARD" | "CREDIT_CARD" | "TRANSFER";
 export type SaleStatus = "CONFIRMED" | "CANCELLED";
 export type InstallmentStatus = "PENDING" | "RECEIVED" | "CANCELLED";
+export type FreightType = "NONE" | "FREE" | "PAID";
+
+export const FREIGHT_TYPE_LABELS: Record<FreightType, string> = {
+  NONE: "Sem frete",
+  FREE: "Frete grátis",
+  PAID: "Frete",
+};
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   CASH: "Dinheiro",
@@ -57,6 +64,8 @@ export interface CreateSaleRequest {
   cardFeePct?: number | null;
   cardFeePassed: boolean;
   discountAmount: number;
+  freightType: FreightType;
+  freightAmount: number;
   notes?: string;
   items: CreateSaleItemRequest[];
 }
@@ -113,6 +122,9 @@ export interface SaleDetail {
   cardFeePassed: boolean;
   commissionPct: number;
   commissionAmount: number;
+  freightType: FreightType;
+  freightAmount: number;
+  totalPaid: number;
   status: SaleStatus;
   notes: string | null;
   items: SaleItemResponse[];

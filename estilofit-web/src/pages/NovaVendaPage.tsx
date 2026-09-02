@@ -7,8 +7,8 @@ import { PageHeader } from "../components/PageHeader";
 import { saleService } from "../services/saleService";
 import { productService } from "../services/productService";
 import { getApiErrorMessage } from "../lib/api";
-import type { PaymentMethod } from "../types/sale";
-import { PAYMENT_METHOD_LABELS } from "../types/sale";
+import type { PaymentMethod, FreightType } from "../types/sale";
+import { PAYMENT_METHOD_LABELS, FREIGHT_TYPE_LABELS } from "../types/sale";
 import type { Variant } from "../types/product";
 
 interface CartRow {
@@ -35,6 +35,8 @@ export function NovaVendaPage() {
   const [cardFeePct, setCardFeePct] = useState("");
   const [cardFeePassed, setCardFeePassed] = useState(true);
   const [discount, setDiscount] = useState("0");
+  const [freightType, setFreightType] = useState<FreightType>("NONE");
+  const [freightAmount, setFreightAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [cart, setCart] = useState<CartRow[]>([]);
 
@@ -73,6 +75,8 @@ export function NovaVendaPage() {
         cardFeePct: isCreditCard && cardFeePct ? Number(cardFeePct) : null,
         cardFeePassed,
         discountAmount: Number(discount) || 0,
+        freightType,
+        freightAmount: freightType === "PAID" ? Number(freightAmount) || 0 : 0,
         notes: notes || undefined,
         items: cart.map((c) => ({ variantId: c.variantId, quantity: c.quantity })),
       }),
@@ -126,6 +130,8 @@ export function NovaVendaPage() {
   const subtotal = cart.reduce((acc, c) => acc + c.quantity * c.unitPrice, 0);
   const discountValue = Number(discount) || 0;
   const finalAmount = Math.max(subtotal - discountValue, 0);
+  const freightValue = freightType === "PAID" ? Number(freightAmount) || 0 : 0;
+  const totalPaid = finalAmount + freightValue;
 
   // Prévia do parcelamento
   const installmentPreview = useMemo(() => {
@@ -141,6 +147,7 @@ export function NovaVendaPage() {
     cart.length > 0 &&
     finalAmount > 0 &&
     (!isInstallment || (cardFeePct !== "" && Number(cardFeePct) >= 0)) &&
+    (freightType !== "PAID" || freightValue > 0) &&
     !createMutation.isPending;
 
   return (
@@ -330,6 +337,30 @@ export function NovaVendaPage() {
           </div>
 
           <div>
+            <label className="mb-1.5 block text-sm text-content-secondary">Frete</label>
+            <select
+              className="input-base"
+              value={freightType}
+              onChange={(e) => setFreightType(e.target.value as FreightType)}
+            >
+              {(["NONE", "FREE", "PAID"] as FreightType[]).map((f) => (
+                <option key={f} value={f}>{FREIGHT_TYPE_LABELS[f]}</option>
+              ))}
+            </select>
+            {freightType === "PAID" && (
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                className="input-base mt-2"
+                value={freightAmount}
+                onChange={(e) => setFreightAmount(e.target.value)}
+                placeholder="Valor do frete (R$) — ex: 25,00"
+              />
+            )}
+          </div>
+
+          <div>
             <label className="mb-1.5 block text-sm text-content-secondary">Observações</label>
             <textarea
               className="input-base min-h-16"
@@ -347,8 +378,17 @@ export function NovaVendaPage() {
             <div className="flex justify-between text-content-secondary">
               <span>Desconto</span><span>- {money(discountValue)}</span>
             </div>
+            <div className="flex justify-between text-content-secondary">
+              <span>Produtos</span><span>{money(finalAmount)}</span>
+            </div>
+            {freightType !== "NONE" && (
+              <div className="flex justify-between text-content-secondary">
+                <span>Frete{freightType === "FREE" ? " (grátis)" : ""}</span>
+                <span>{freightType === "FREE" ? money(0) : money(freightValue)}</span>
+              </div>
+            )}
             <div className="flex justify-between font-semibold text-content-primary">
-              <span>Total</span><span>{money(finalAmount)}</span>
+              <span>Total a pagar</span><span>{money(totalPaid)}</span>
             </div>
             {installmentPreview && (
               <div className="mt-2 rounded-card bg-bg-input p-2 text-xs text-content-secondary">

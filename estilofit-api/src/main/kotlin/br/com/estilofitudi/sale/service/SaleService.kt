@@ -120,6 +120,17 @@ class SaleService(
             }
         }
 
+        // Frete (repasse — não entra em faturamento/lucro/comissão). PAID exige valor > 0;
+        // NONE e FREE forçam frete zero.
+        val freightAmount = if (request.freightType == FreightType.PAID) {
+            if (request.freightAmount <= BigDecimal.ZERO) {
+                throw BusinessException("Informe o valor do frete.")
+            }
+            request.freightAmount
+        } else {
+            BigDecimal.ZERO
+        }
+
         // Comissão do vendedor: snapshot da taxa vigente. Só vale para quem é SELLER;
         // vendas registradas por Admin/Gestor não geram comissão.
         val commissionPct = if (seller.role == Role.SELLER) settingsReader.sellerCommissionPct() else BigDecimal.ZERO
@@ -140,6 +151,8 @@ class SaleService(
             cardFeePassed = request.cardFeePassed,
             commissionPct = commissionPct,
             commissionAmount = commissionAmount,
+            freightType = request.freightType,
+            freightAmount = freightAmount,
             notes = request.notes?.trim()?.ifBlank { null },
         )
 

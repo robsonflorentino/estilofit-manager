@@ -204,6 +204,9 @@ export function SalesPage() {
               {detail.commissionAmount > 0 && (
                 <div><span className="text-content-muted">Comissão</span><div className="text-content-primary">{money(detail.commissionAmount)} ({detail.commissionPct}%)</div></div>
               )}
+              {detail.freightType !== "NONE" && (
+                <div><span className="text-content-muted">Frete</span><div className="text-content-primary">{detail.freightType === "FREE" ? "Grátis" : money(detail.freightAmount)}</div></div>
+              )}
             </div>
 
             {/* Itens */}
@@ -233,7 +236,13 @@ export function SalesPage() {
             <div className="space-y-1 border-t border-border-subtle pt-2">
               <div className="flex justify-between text-content-secondary"><span>Subtotal</span><span>{money(detail.totalAmount)}</span></div>
               <div className="flex justify-between text-content-secondary"><span>Desconto</span><span>- {money(detail.discountAmount)}</span></div>
-              <div className="flex justify-between font-semibold text-content-primary"><span>Total</span><span>{money(detail.finalAmount)}</span></div>
+              <div className="flex justify-between font-semibold text-content-primary"><span>Total (produtos)</span><span>{money(detail.finalAmount)}</span></div>
+              {detail.freightType === "PAID" && detail.freightAmount > 0 && (
+                <>
+                  <div className="flex justify-between text-content-secondary"><span>Frete</span><span>{money(detail.freightAmount)}</span></div>
+                  <div className="flex justify-between font-semibold text-content-primary"><span>Total pago</span><span>{money(detail.totalPaid)}</span></div>
+                </>
+              )}
             </div>
 
             {/* Parcelas */}

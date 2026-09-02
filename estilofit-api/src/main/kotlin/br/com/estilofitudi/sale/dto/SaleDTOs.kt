@@ -1,5 +1,6 @@
 package br.com.estilofitudi.sale.dto
 
+import br.com.estilofitudi.sale.domain.FreightType
 import br.com.estilofitudi.sale.domain.PaymentMethod
 import br.com.estilofitudi.sale.domain.Sale
 import br.com.estilofitudi.sale.domain.SaleStatus
@@ -30,6 +31,11 @@ data class CreateSaleRequest(
 
     @field:DecimalMin(value = "0.0", message = "Desconto não pode ser negativo")
     val discountAmount: BigDecimal = BigDecimal.ZERO,
+
+    val freightType: FreightType = FreightType.NONE,
+
+    @field:DecimalMin(value = "0.0", message = "Frete não pode ser negativo")
+    val freightAmount: BigDecimal = BigDecimal.ZERO,
 
     val notes: String? = null,
 
@@ -100,6 +106,9 @@ data class SaleDetailResponse(
     val cardFeePassed: Boolean,
     val commissionPct: BigDecimal,
     val commissionAmount: BigDecimal,
+    val freightType: FreightType,
+    val freightAmount: BigDecimal,
+    val totalPaid: BigDecimal,          // finalAmount (produtos) + frete — o que o cliente paga
     val status: SaleStatus,
     val notes: String?,
     val items: List<SaleItemResponse>,
@@ -135,6 +144,9 @@ fun Sale.toDetailResponse() = SaleDetailResponse(
     cardFeePassed = cardFeePassed,
     commissionPct = commissionPct,
     commissionAmount = commissionAmount,
+    freightType = freightType,
+    freightAmount = freightAmount,
+    totalPaid = finalAmount.add(freightAmount),
     status = status,
     notes = notes,
     items = items.map {
