@@ -1,0 +1,37 @@
+import { api } from "../lib/api";
+import type {
+  DailyRevenue,
+  ReportPeriod,
+  ReportSummary,
+  RevenueSlice,
+  TopProduct,
+} from "../types/report";
+
+export const reportService = {
+  async summary(period: ReportPeriod): Promise<ReportSummary> {
+    const { data } = await api.get<ReportSummary>("/reports/summary", { params: period });
+    return data;
+  },
+
+  async revenueByDay(period: ReportPeriod): Promise<DailyRevenue[]> {
+    const { data } = await api.get<DailyRevenue[]>("/reports/revenue-by-day", { params: period });
+    return data;
+  },
+
+  async topProducts(period: ReportPeriod, limit = 10): Promise<TopProduct[]> {
+    const { data } = await api.get<TopProduct[]>("/reports/top-products", {
+      params: { ...period, limit },
+    });
+    return data;
+  },
+
+  async byChannel(period: ReportPeriod): Promise<RevenueSlice[]> {
+    const { data } = await api.get<RevenueSlice[]>("/reports/by-channel", { params: period });
+    return data;
+  },
+
+  async byPayment(period: ReportPeriod): Promise<RevenueSlice[]> {
+    const { data } = await api.get<RevenueSlice[]>("/reports/by-payment", { params: period });
+    return data;
+  },
+};
