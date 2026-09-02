@@ -1,4 +1,7 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { useAuthStore } from "./store/authStore";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
@@ -19,6 +22,23 @@ import { PrivateRoute } from "./routes/PrivateRoute";
 import { RoleRoute } from "./routes/RoleRoute";
 
 function App() {
+  const isInitializing = useAuthStore((s) => s.isInitializing);
+  const restoreSession = useAuthStore((s) => s.restoreSession);
+
+  // No boot, tenta restaurar a sessão a partir do refresh token (cookie httpOnly).
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
+
+  // Enquanto verifica a sessão, evita o flash para /login em reloads.
+  if (isInitializing) {
+    return (
+      <div className="flex h-full items-center justify-center bg-bg-base">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-purple" />
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>

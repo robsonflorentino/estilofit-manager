@@ -24,4 +24,5 @@ data class RefreshResponse(
     val accessToken: String,
     val tokenType: String = "Bearer",
     val expiresIn: Long,
+    val user: UserResponse,
 )

@@ -55,6 +55,10 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   swagger:
     enabled: ${SWAGGER_ENABLED:true}
+  cookie:
+    # Secure=true exige HTTPS. Em dev (HTTP) defina COOKIE_SECURE=false para o
+    # refresh token funcionar; em produção mantenha true.
+    secure: ${COOKIE_SECURE:true}
 
 springdoc:
   swagger-ui:
