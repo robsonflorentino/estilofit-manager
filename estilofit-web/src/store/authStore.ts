@@ -7,9 +7,11 @@ interface AuthState {
   user: UserResponse | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitializing: boolean;
 
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  restoreSession: () => Promise<void>;
   clear: () => void;
   hasRole: (roles: Role[]) => boolean;
 }
@@ -18,6 +20,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
+  isInitializing: true,
 
   login: async (email, password) => {
     set({ isLoading: true });
@@ -28,6 +31,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       set({ isLoading: false });
       throw error;
+    }
+  },
+
+  // Tenta restaurar a sessão no boot usando o refresh token (cookie httpOnly).
+  // Se não houver sessão válida, apenas segue como não autenticado.
+  restoreSession: async () => {
+    try {
+      const response = await authService.refresh();
+      setAccessToken(response.accessToken);
+      set({ user: response.user, isAuthenticated: true, isInitializing: false });
+    } catch {
+      setAccessToken(null);
+      set({ user: null, isAuthenticated: false, isInitializing: false });
     }
   },
 

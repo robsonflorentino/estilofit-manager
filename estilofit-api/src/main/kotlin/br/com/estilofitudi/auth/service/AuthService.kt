@@ -71,6 +71,7 @@ class AuthService(
         return RefreshResponse(
             accessToken = newAccessToken,
             expiresIn   = appProperties.jwt.accessTokenExpiration,
+            user        = user.toResponse(),
         )
     }
 }

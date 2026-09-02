@@ -10,6 +10,7 @@ class AppProperties {
     val jwt: JwtProperties = JwtProperties()
     val cors: CorsProperties = CorsProperties()
     val swagger: SwaggerProperties = SwaggerProperties()
+    val cookie: CookieProperties = CookieProperties()
 
     class JwtProperties {
         var secret: String = ""
@@ -23,5 +24,11 @@ class AppProperties {
 
     class SwaggerProperties {
         var enabled: Boolean = true
+    }
+
+    class CookieProperties {
+        /** Atributo Secure do refresh token cookie. Deve ser true em produção (HTTPS);
+         *  em dev sobre HTTP precisa ser false, senão o navegador não envia o cookie. */
+        var secure: Boolean = true
     }
 }

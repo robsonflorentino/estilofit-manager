@@ -5,6 +5,7 @@ import br.com.estilofitudi.report.dto.DailyRevenueResponse
 import br.com.estilofitudi.report.dto.ReportSummaryResponse
 import br.com.estilofitudi.report.dto.RevenueSliceResponse
 import br.com.estilofitudi.report.dto.SalesTargetResponse
+import br.com.estilofitudi.report.dto.SellerRankingResponse
 import br.com.estilofitudi.report.dto.TopProductResponse
 import br.com.estilofitudi.report.service.ReportService
 import io.swagger.v3.oas.annotations.Operation
@@ -87,4 +88,15 @@ class ReportController(private val reportService: ReportService) {
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
     ): ResponseEntity<List<ChannelProfitResponse>> =
         ResponseEntity.ok(reportService.profitByChannel(startDate, endDate))
+
+    @GetMapping("/seller-ranking")
+    @Operation(
+        summary = "Ranking de vendedores",
+        description = "🟡 Admin + Gestor — vendedores ordenados por faturamento no período",
+    )
+    fun sellerRanking(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
+    ): ResponseEntity<List<SellerRankingResponse>> =
+        ResponseEntity.ok(reportService.sellerRanking(startDate, endDate))
 }

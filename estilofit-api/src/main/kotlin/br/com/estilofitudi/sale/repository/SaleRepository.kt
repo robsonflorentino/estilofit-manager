@@ -159,6 +159,33 @@ interface SaleRepository : JpaRepository<Sale, UUID> {
         @Param("start") start: LocalDateTime,
         @Param("end") end: LocalDateTime,
     ): List<ChannelProfitRow>
+
+    /**
+     * Ranking de vendedores por faturamento no período (apenas vendas confirmadas).
+     */
+    @Query("""
+        SELECT s.seller.id AS sellerId,
+               s.seller.name AS sellerName,
+               COALESCE(SUM(s.finalAmount), 0) AS revenue,
+               COUNT(s) AS saleCount
+        FROM Sale s
+        WHERE s.status = br.com.estilofitudi.sale.domain.SaleStatus.CONFIRMED
+          AND s.confirmedAt >= :start AND s.confirmedAt < :end
+        GROUP BY s.seller.id, s.seller.name
+        ORDER BY SUM(s.finalAmount) DESC
+    """)
+    fun sellerRanking(
+        @Param("start") start: LocalDateTime,
+        @Param("end") end: LocalDateTime,
+    ): List<SellerRankingRow>
+}
+
+/** Faturamento e nº de vendas agregados por vendedor. */
+interface SellerRankingRow {
+    val sellerId: java.util.UUID
+    val sellerName: String
+    val revenue: java.math.BigDecimal
+    val saleCount: Long
 }
 
 /** Faturamento, custo e nº de vendas agregados por canal. */

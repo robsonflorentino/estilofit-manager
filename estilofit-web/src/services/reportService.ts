@@ -6,6 +6,7 @@ import type {
   ReportSummary,
   RevenueSlice,
   SalesTarget,
+  SellerRanking,
   TopProduct,
 } from "../types/report";
 
@@ -44,6 +45,11 @@ export const reportService = {
 
   async profitByChannel(period: ReportPeriod): Promise<ChannelProfit[]> {
     const { data } = await api.get<ChannelProfit[]>("/reports/profit-by-channel", { params: period });
+    return data;
+  },
+
+  async sellerRanking(period: ReportPeriod): Promise<SellerRanking[]> {
+    const { data } = await api.get<SellerRanking[]>("/reports/seller-ranking", { params: period });
     return data;
   },
 };

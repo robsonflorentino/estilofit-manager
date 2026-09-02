@@ -9,7 +9,6 @@ import br.com.estilofitudi.shared.exception.BusinessException
 import br.com.estilofitudi.shared.security.JwtService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
@@ -83,25 +82,19 @@ class AuthController(
     // ── Helpers de cookie ────────────────────────────────────────────────────
 
     private fun setRefreshTokenCookie(response: HttpServletResponse, token: String) {
-        val cookie = Cookie(REFRESH_TOKEN_COOKIE, token).apply {
-            isHttpOnly  = true
-            secure      = true          // apenas HTTPS — em dev pode desabilitar se necessário
-            path        = "/api/v1/auth"
-            maxAge      = appProperties.jwt.refreshTokenExpiration.toInt()
-            // SameSite via header pois a API Cookie do Servlet não suporta diretamente
-        }
-        response.addCookie(cookie)
-        // Garante SameSite=Strict para proteção CSRF
+        // Secure só sobre HTTPS; em dev (HTTP) a flag é desligada para o cookie ser enviado.
+        val secureAttr = if (appProperties.cookie.secure) "; Secure" else ""
         response.addHeader(
             "Set-Cookie",
-            "${REFRESH_TOKEN_COOKIE}=$token; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Strict; Max-Age=${appProperties.jwt.refreshTokenExpiration}",
+            "${REFRESH_TOKEN_COOKIE}=$token; Path=/api/v1/auth; HttpOnly$secureAttr; SameSite=Strict; Max-Age=${appProperties.jwt.refreshTokenExpiration}",
         )
     }
 
     private fun clearRefreshTokenCookie(response: HttpServletResponse) {
+        val secureAttr = if (appProperties.cookie.secure) "; Secure" else ""
         response.addHeader(
             "Set-Cookie",
-            "$REFRESH_TOKEN_COOKIE=; Path=/api/v1/auth; HttpOnly; Secure; SameSite=Strict; Max-Age=0",
+            "$REFRESH_TOKEN_COOKIE=; Path=/api/v1/auth; HttpOnly$secureAttr; SameSite=Strict; Max-Age=0",
         )
     }
 

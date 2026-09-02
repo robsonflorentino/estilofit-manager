@@ -41,6 +41,13 @@ const monthLabel = (ym: string) => {
   return new Date(y, m - 1, 1).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
 };
 
+// Estilos do pódio (ouro, prata, bronze) — index 0/1/2
+const MEDALS = [
+  { emoji: "🥇", label: "Ouro", ring: "border-t-[#facc15]", badge: "bg-[#facc15]/15 text-[#facc15]" },
+  { emoji: "🥈", label: "Prata", ring: "border-t-[#cbd5e1]", badge: "bg-[#cbd5e1]/15 text-[#cbd5e1]" },
+  { emoji: "🥉", label: "Bronze", ring: "border-t-[#d97706]", badge: "bg-[#d97706]/15 text-[#d97706]" },
+];
+
 const PIE_COLORS = ["#7c3aed", "#a78bfa", "#c4b5fd", "#8b5cf6", "#6d28d9", "#ddd6fe"];
 
 function firstDayOfMonth(): string {
@@ -92,6 +99,7 @@ export function ReportsPage() {
   const byPayment = useQuery({ queryKey: ["report", "payment", ...key], queryFn: () => reportService.byPayment(period) });
   const salesTarget = useQuery({ queryKey: ["report", "sales-target", targetMonths], queryFn: () => reportService.salesTarget(targetMonths) });
   const profitByChannel = useQuery({ queryKey: ["report", "profit-channel", ...key], queryFn: () => reportService.profitByChannel(period) });
+  const sellerRanking = useQuery({ queryKey: ["report", "seller-ranking", ...key], queryFn: () => reportService.sellerRanking(period) });
 
   const dayData = (byDay.data ?? []).map((d) => ({ ...d, label: dayLabel(d.day) }));
   const topData = (top.data ?? []).map((t) => ({
@@ -103,6 +111,9 @@ export function ReportsPage() {
   const targetData = (salesTarget.data?.months ?? []).map((m) => ({ ...m, label: monthLabel(m.month) }));
   const currentTarget = salesTarget.data?.months[salesTarget.data.months.length - 1];
   const profitData = profitByChannel.data ?? [];
+  const rankingData = sellerRanking.data ?? [];
+  const podium = rankingData.slice(0, 3);
+  const rest = rankingData.slice(3);
 
   return (
     <div>
@@ -338,6 +349,68 @@ export function ReportsPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+        </ChartCard>
+      </div>
+
+      {/* Ranking de vendedores */}
+      <div className="mt-6">
+        <ChartCard title="Ranking de vendedores">
+          {sellerRanking.isLoading ? (
+            <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-brand-purple" /></div>
+          ) : rankingData.length === 0 ? (
+            <p className="py-16 text-center text-sm text-content-muted">Sem vendas no período.</p>
+          ) : (
+            <div className="space-y-6">
+              {/* Pódio (top 3) */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {podium.map((seller, i) => (
+                  <div key={seller.sellerId} className={`card border-t-[3px] ${MEDALS[i].ring}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl">{MEDALS[i].emoji}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${MEDALS[i].badge}`}>
+                        {MEDALS[i].label}
+                      </span>
+                    </div>
+                    <p className="mt-2 truncate font-semibold text-content-primary" title={seller.sellerName}>
+                      {seller.sellerName}
+                    </p>
+                    <p className="text-lg font-bold text-content-primary">{money(seller.revenue)}</p>
+                    <p className="text-xs text-content-muted">
+                      {seller.saleCount} venda(s) · ticket {money(seller.averageTicket)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Demais posições */}
+              {rest.length > 0 && (
+                <div className="overflow-hidden rounded-card border border-border-subtle">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-bg-surface-raised text-xs uppercase tracking-wider text-content-secondary">
+                      <tr>
+                        <th className="px-3 py-2">#</th>
+                        <th className="px-3 py-2">Vendedor</th>
+                        <th className="px-3 py-2">Faturamento</th>
+                        <th className="px-3 py-2">Vendas</th>
+                        <th className="px-3 py-2">Ticket médio</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-subtle">
+                      {rest.map((seller) => (
+                        <tr key={seller.sellerId} className="bg-bg-surface">
+                          <td className="px-3 py-2 text-content-secondary">{seller.position}º</td>
+                          <td className="px-3 py-2 font-medium text-content-primary">{seller.sellerName}</td>
+                          <td className="px-3 py-2 text-content-secondary">{money(seller.revenue)}</td>
+                          <td className="px-3 py-2 text-content-secondary">{seller.saleCount}</td>
+                          <td className="px-3 py-2 text-content-secondary">{money(seller.averageTicket)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </ChartCard>

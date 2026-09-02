@@ -38,6 +38,7 @@ export interface RefreshResponse {
   accessToken: string;
   tokenType: string;
   expiresIn: number;
+  user: UserResponse;
 }
 
 // ── Paginação (ADR-010) ──────────────────────────────────────────────

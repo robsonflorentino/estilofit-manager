@@ -55,3 +55,12 @@ export interface ChannelProfit {
   marginPct: number;
   saleCount: number;
 }
+
+export interface SellerRanking {
+  position: number;
+  sellerId: string;
+  sellerName: string;
+  revenue: number;
+  saleCount: number;
+  averageTicket: number;
+}

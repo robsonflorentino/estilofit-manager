@@ -169,6 +169,26 @@ class ReportService(
             .sortedByDescending { it.profit }
     }
 
+    /** Ranking de vendedores por faturamento no período (posição 1 = maior faturamento). */
+    fun sellerRanking(startDate: LocalDate, endDate: LocalDate): List<SellerRankingResponse> {
+        val (start, end) = window(startDate, endDate)
+        return saleRepository.sellerRanking(start, end).mapIndexed { index, r ->
+            val averageTicket = if (r.saleCount > 0) {
+                r.revenue.divide(BigDecimal(r.saleCount), 2, RoundingMode.HALF_UP)
+            } else {
+                BigDecimal.ZERO.setScale(2)
+            }
+            SellerRankingResponse(
+                position = index + 1,
+                sellerId = r.sellerId,
+                sellerName = r.sellerName,
+                revenue = r.revenue.setScale(2, RoundingMode.HALF_UP),
+                saleCount = r.saleCount,
+                averageTicket = averageTicket,
+            )
+        }
+    }
+
     private fun toSlices(rows: List<GroupRevenueRow>): List<RevenueSliceResponse> {
         val total = rows.fold(BigDecimal.ZERO) { acc, r -> acc + r.revenue }
         return rows.map { r ->
