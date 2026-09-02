@@ -1,40 +1,31 @@
 package br.com.estilofitudi.inventory.service
 
-import jakarta.persistence.EntityManager
+import br.com.estilofitudi.settings.domain.SettingKey
+import br.com.estilofitudi.settings.service.SettingsService
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 
 /**
- * Leitura simples de configurações de system_settings enquanto o módulo de Settings
- * não é implementado (decisão 3 do tech design 009). Faz fallback quando a chave não existe.
+ * Fachada de leitura de configurações para os módulos de domínio (estoque, dashboard,
+ * promoções). Delega ao SettingsService (fonte única) e converte para o tipo esperado,
+ * com fallback para o valor padrão da chave quando o valor armazenado é inválido.
  */
 @Component
-class SettingsReader(private val entityManager: EntityManager) {
+class SettingsReader(private val settingsService: SettingsService) {
 
-    fun defaultProfitMargin(): BigDecimal =
-        readDecimal("DEFAULT_PROFIT_MARGIN", fallback = BigDecimal("100"))
+    fun defaultProfitMargin(): BigDecimal = decimal(SettingKey.DEFAULT_PROFIT_MARGIN)
 
-    fun lowStockThreshold(): Int =
-        readDecimal("LOW_STOCK_THRESHOLD", fallback = BigDecimal("2")).toInt()
+    fun lowStockThreshold(): Int = integer(SettingKey.LOW_STOCK_THRESHOLD)
 
     /** Percentual do lucro destinado ao pró-labore, para o KPI estimado do dashboard. */
-    fun proLaborePct(): BigDecimal =
-        readDecimal("PRO_LABORE_PCT", fallback = BigDecimal("30"))
+    fun proLaborePct(): BigDecimal = decimal(SettingKey.PRO_LABORE_PCT)
 
     /** Dias sem venda para uma variação virar alerta de promoção. */
-    fun promotionAlertDays(): Int =
-        readDecimal("PROMOTION_ALERT_DAYS", fallback = BigDecimal("60")).toInt()
+    fun promotionAlertDays(): Int = integer(SettingKey.PROMOTION_ALERT_DAYS)
 
-    private fun readDecimal(key: String, fallback: BigDecimal): BigDecimal {
-        return try {
-            val value = entityManager
-                .createNativeQuery("SELECT value FROM system_settings WHERE key = :k")
-                .setParameter("k", key)
-                .resultList
-                .firstOrNull() as? String
-            value?.toBigDecimalOrNull() ?: fallback
-        } catch (ex: Exception) {
-            fallback
-        }
-    }
+    private fun decimal(def: SettingKey): BigDecimal =
+        settingsService.rawValue(def).toBigDecimalOrNull() ?: BigDecimal(def.fallback)
+
+    private fun integer(def: SettingKey): Int =
+        settingsService.rawValue(def).toBigDecimalOrNull()?.toInt() ?: BigDecimal(def.fallback).toInt()
 }
