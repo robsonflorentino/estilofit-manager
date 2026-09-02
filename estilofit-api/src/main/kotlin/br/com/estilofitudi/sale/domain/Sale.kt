@@ -52,6 +52,14 @@ class Sale(
     @Column(name = "commission_amount", nullable = false, precision = 10, scale = 2)
     var commissionAmount: BigDecimal = BigDecimal.ZERO,
 
+    // Frete (repasse ao cliente — não entra em faturamento/lucro/comissão)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "freight_type", nullable = false, length = 10)
+    var freightType: FreightType = FreightType.NONE,
+
+    @Column(name = "freight_amount", nullable = false, precision = 10, scale = 2)
+    var freightAmount: BigDecimal = BigDecimal.ZERO,
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     var status: SaleStatus = SaleStatus.CONFIRMED,
