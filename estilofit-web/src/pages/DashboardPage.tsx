@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { DollarSign, ShoppingBag, Package, Wallet } from "lucide-react";
+import { Link } from "react-router-dom";
+import { DollarSign, ShoppingBag, Package, Wallet, Target } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { dashboardService } from "../services/dashboardService";
+import { reportService } from "../services/reportService";
 
 const money = (n: number | null | undefined) =>
   n == null ? "R$ —" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -31,8 +33,75 @@ function KpiCard({ icon: Icon, value, label, loading = false }: KpiCardProps) {
   );
 }
 
+/** Card enxuto de meta do mês (só gestão): meta, realizado, progresso e situação. */
+function MonthTargetCard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard", "month-target"],
+    // busca 1 mês; usamos o último item (mês corrente)
+    queryFn: () => reportService.salesTarget(1),
+  });
+
+  const current = data?.months[data.months.length - 1];
+
+  const progress =
+    current && current.target > 0
+      ? Math.min((current.revenue / current.target) * 100, 100)
+      : 0;
+  const remaining = current ? Math.max(current.target - current.revenue, 0) : 0;
+
+  return (
+    <div className="card mt-6">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <h2 className="flex items-center gap-2 font-semibold text-content-primary">
+          <Target className="h-5 w-5 text-brand-purple" /> Meta do mês
+        </h2>
+        {data && (
+          <span className="text-xs text-content-muted">
+            para pró-labore de {money(data.targetProLabore)} · {" "}
+            <Link to="/reports" className="text-brand-purple hover:underline">ver histórico</Link>
+          </span>
+        )}
+      </div>
+
+      {isLoading || !current ? (
+        <div className="h-16 w-full animate-pulse rounded bg-bg-surface-raised" />
+      ) : (
+        <>
+          <div className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <p className="text-xs text-content-muted">Meta de faturamento</p>
+              <p className="text-lg font-bold text-content-primary">{money(current.target)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-content-muted">Realizado</p>
+              <p className="text-lg font-bold text-content-primary">{money(current.revenue)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-content-muted">Situação</p>
+              <p className={`text-lg font-bold ${current.achieved ? "text-state-success" : "text-state-warning"}`}>
+                {current.achieved ? "Meta atingida" : `Faltam ${money(remaining)}`}
+              </p>
+            </div>
+          </div>
+
+          {/* Barra de progresso */}
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-bg-input">
+            <div
+              className={`h-full rounded-full ${current.achieved ? "bg-state-success" : "bg-brand-purple"}`}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="mt-1 text-right text-xs text-content-muted">{progress.toFixed(0)}% da meta</p>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
+  const hasRole = useAuthStore((s) => s.hasRole);
+  const isManagement = hasRole(["ADMIN", "MANAGER"]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard", "kpis"],
@@ -83,6 +152,9 @@ export function DashboardPage() {
           </>
         )}
       </div>
+
+      {/* Meta do mês — apenas gestão */}
+      {isManagement && <MonthTargetCard />}
 
       {!isLoading && !showManagement && (
         <div className="card mt-6">
