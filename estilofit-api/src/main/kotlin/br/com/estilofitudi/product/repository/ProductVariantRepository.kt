@@ -51,4 +51,45 @@ interface ProductVariantRepository : JpaRepository<ProductVariant, UUID> {
     /** Total de itens em estoque (soma das quantidades das variações ativas) — KPI do dashboard. */
     @Query("SELECT COALESCE(SUM(v.stockQuantity), 0) FROM ProductVariant v WHERE v.active = true")
     fun sumActiveStock(): Long
+
+    /**
+     * Variações ativas com estoque disponível, com a data da última venda confirmada
+     * (lastSaleAt, nulo se nunca vendeu) e a data da primeira entrada em estoque
+     * (firstEntryAt, via movimentação ENTRY). Base do relatório de produtos parados.
+     */
+    @Query("""
+        SELECT v.id AS variantId,
+               v.sku AS sku,
+               v.product.name AS productName,
+               v.size AS size,
+               v.color AS color,
+               v.stockQuantity AS stockQuantity,
+               v.salePrice AS salePrice,
+               v.averageCost AS averageCost,
+               (SELECT MAX(s.confirmedAt) FROM SaleItem i JOIN i.sale s
+                 WHERE i.variant = v
+                   AND s.status = br.com.estilofitudi.sale.domain.SaleStatus.CONFIRMED) AS lastSaleAt,
+               (SELECT MIN(m.createdAt) FROM StockMovement m
+                 WHERE m.variant = v
+                   AND m.type = br.com.estilofitudi.inventory.domain.StockMovementType.ENTRY) AS firstEntryAt,
+               v.createdAt AS variantCreatedAt
+        FROM ProductVariant v
+        WHERE v.active = true AND v.stockQuantity > 0
+    """)
+    fun findStaleCandidates(): List<StaleProductRow>
+}
+
+/** Projeção de candidata a promoção (variação parada). */
+interface StaleProductRow {
+    val variantId: UUID
+    val sku: String
+    val productName: String
+    val size: String
+    val color: String
+    val stockQuantity: Int
+    val salePrice: java.math.BigDecimal?
+    val averageCost: java.math.BigDecimal?
+    val lastSaleAt: java.time.LocalDateTime?
+    val firstEntryAt: java.time.LocalDateTime?
+    val variantCreatedAt: java.time.LocalDateTime?
 }
