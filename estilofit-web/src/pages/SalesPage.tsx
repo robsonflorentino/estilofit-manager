@@ -201,6 +201,9 @@ export function SalesPage() {
               {detail.cardFeePct != null && (
                 <div><span className="text-content-muted">Taxa maquininha</span><div className="text-content-primary">{detail.cardFeePct}%{detail.cardFeePassed ? " (repassada)" : ""}</div></div>
               )}
+              {detail.commissionAmount > 0 && (
+                <div><span className="text-content-muted">Comissão</span><div className="text-content-primary">{money(detail.commissionAmount)} ({detail.commissionPct}%)</div></div>
+              )}
             </div>
 
             {/* Itens */}

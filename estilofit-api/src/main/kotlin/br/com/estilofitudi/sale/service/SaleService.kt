@@ -1,5 +1,6 @@
 package br.com.estilofitudi.sale.service
 
+import br.com.estilofitudi.inventory.service.SettingsReader
 import br.com.estilofitudi.inventory.service.StockService
 import br.com.estilofitudi.product.domain.ProductVariant
 import br.com.estilofitudi.product.repository.ProductVariantRepository
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDateTime
 import java.util.*
 
@@ -28,6 +30,7 @@ class SaleService(
     private val userRepository: UserRepository,
     private val stockService: StockService,
     private val installmentScheduler: InstallmentScheduler,
+    private val settingsReader: SettingsReader,
 ) {
 
     fun findAll(
@@ -117,6 +120,13 @@ class SaleService(
             }
         }
 
+        // Comissão do vendedor: snapshot da taxa vigente. Só vale para quem é SELLER;
+        // vendas registradas por Admin/Gestor não geram comissão.
+        val commissionPct = if (seller.role == Role.SELLER) settingsReader.sellerCommissionPct() else BigDecimal.ZERO
+        val commissionAmount = finalAmount
+            .multiply(commissionPct)
+            .divide(BigDecimal(100), 2, RoundingMode.HALF_UP)
+
         val sale = Sale(
             channel = channel,
             seller = seller,
@@ -128,6 +138,8 @@ class SaleService(
             installments = request.installments,
             cardFeePct = request.cardFeePct,
             cardFeePassed = request.cardFeePassed,
+            commissionPct = commissionPct,
+            commissionAmount = commissionAmount,
             notes = request.notes?.trim()?.ifBlank { null },
         )
 

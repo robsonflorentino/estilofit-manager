@@ -111,6 +111,8 @@ export interface SaleDetail {
   installments: number;
   cardFeePct: number | null;
   cardFeePassed: boolean;
+  commissionPct: number;
+  commissionAmount: number;
   status: SaleStatus;
   notes: string | null;
   items: SaleItemResponse[];

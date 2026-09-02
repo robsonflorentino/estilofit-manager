@@ -14,6 +14,7 @@ import { NovaVendaPage } from "./pages/NovaVendaPage";
 import { ReceivablesPage } from "./pages/ReceivablesPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { PromotionsPage } from "./pages/PromotionsPage";
+import { CommissionsPage } from "./pages/CommissionsPage";
 import { UsersPage } from "./pages/UsersPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
@@ -67,6 +68,7 @@ function App() {
               <Route path="/receivables" element={<ReceivablesPage />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/promotions" element={<PromotionsPage />} />
+              <Route path="/commissions" element={<CommissionsPage />} />
             </Route>
 
             {/* Admin */}

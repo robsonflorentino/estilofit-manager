@@ -43,7 +43,8 @@ class DashboardService(
         val estimatedProLabore: BigDecimal? = if (isSeller) {
             null
         } else {
-            val profit = agg.revenue.subtract(agg.cost)
+            // Lucro = faturamento - custo das mercadorias - comissão dos vendedores
+            val profit = agg.revenue.subtract(agg.cost).subtract(agg.commission)
             val positiveProfit = if (profit < BigDecimal.ZERO) BigDecimal.ZERO else profit
             positiveProfit
                 .multiply(settingsReader.proLaborePct())

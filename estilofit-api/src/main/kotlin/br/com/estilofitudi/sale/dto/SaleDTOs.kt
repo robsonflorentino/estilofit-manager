@@ -98,6 +98,8 @@ data class SaleDetailResponse(
     val installments: Int,
     val cardFeePct: BigDecimal?,
     val cardFeePassed: Boolean,
+    val commissionPct: BigDecimal,
+    val commissionAmount: BigDecimal,
     val status: SaleStatus,
     val notes: String?,
     val items: List<SaleItemResponse>,
@@ -131,6 +133,8 @@ fun Sale.toDetailResponse() = SaleDetailResponse(
     installments = installments,
     cardFeePct = cardFeePct,
     cardFeePassed = cardFeePassed,
+    commissionPct = commissionPct,
+    commissionAmount = commissionAmount,
     status = status,
     notes = notes,
     items = items.map {
