@@ -9,6 +9,7 @@ import { SupplyEntryPage } from "./pages/SupplyEntryPage";
 import { SalesPage } from "./pages/SalesPage";
 import { NovaVendaPage } from "./pages/NovaVendaPage";
 import { ReceivablesPage } from "./pages/ReceivablesPage";
+import { ReportsPage } from "./pages/ReportsPage";
 import { UsersPage } from "./pages/UsersPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
 import { AppLayout } from "./layouts/AppLayout";
@@ -42,6 +43,7 @@ function App() {
               <Route path="/suppliers" element={<SuppliersPage />} />
               <Route path="/stock/entry" element={<SupplyEntryPage />} />
               <Route path="/receivables" element={<ReceivablesPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
             </Route>
 
             {/* Admin */}

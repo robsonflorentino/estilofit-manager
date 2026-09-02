@@ -64,6 +64,56 @@ interface SaleRepository : JpaRepository<Sale, UUID> {
         @Param("end") end: LocalDateTime,
         @Param("sellerId") sellerId: UUID?,
     ): SalesAggregate
+
+    // ── Relatórios (período [start, end), apenas vendas confirmadas) ──────────
+
+    /** Faturamento e número de vendas por dia. */
+    @Query("""
+        SELECT CAST(s.confirmedAt AS date) AS day,
+               COALESCE(SUM(s.finalAmount), 0) AS revenue,
+               COUNT(s) AS saleCount
+        FROM Sale s
+        WHERE s.status = br.com.estilofitudi.sale.domain.SaleStatus.CONFIRMED
+          AND s.confirmedAt >= :start AND s.confirmedAt < :end
+        GROUP BY CAST(s.confirmedAt AS date)
+        ORDER BY CAST(s.confirmedAt AS date) ASC
+    """)
+    fun revenueByDay(
+        @Param("start") start: LocalDateTime,
+        @Param("end") end: LocalDateTime,
+    ): List<DailyRevenueRow>
+
+    /** Faturamento e número de vendas por canal. */
+    @Query("""
+        SELECT s.channel.name AS label,
+               COALESCE(SUM(s.finalAmount), 0) AS revenue,
+               COUNT(s) AS saleCount
+        FROM Sale s
+        WHERE s.status = br.com.estilofitudi.sale.domain.SaleStatus.CONFIRMED
+          AND s.confirmedAt >= :start AND s.confirmedAt < :end
+        GROUP BY s.channel.name
+        ORDER BY SUM(s.finalAmount) DESC
+    """)
+    fun revenueByChannel(
+        @Param("start") start: LocalDateTime,
+        @Param("end") end: LocalDateTime,
+    ): List<GroupRevenueRow>
+
+    /** Faturamento e número de vendas por forma de pagamento. */
+    @Query("""
+        SELECT CAST(s.paymentMethod AS string) AS label,
+               COALESCE(SUM(s.finalAmount), 0) AS revenue,
+               COUNT(s) AS saleCount
+        FROM Sale s
+        WHERE s.status = br.com.estilofitudi.sale.domain.SaleStatus.CONFIRMED
+          AND s.confirmedAt >= :start AND s.confirmedAt < :end
+        GROUP BY s.paymentMethod
+        ORDER BY SUM(s.finalAmount) DESC
+    """)
+    fun revenueByPayment(
+        @Param("start") start: LocalDateTime,
+        @Param("end") end: LocalDateTime,
+    ): List<GroupRevenueRow>
 }
 
 /** Projeção dos agregados de vendas para os KPIs do dashboard. */
@@ -71,4 +121,18 @@ interface SalesAggregate {
     val revenue: java.math.BigDecimal
     val saleCount: Long
     val cost: java.math.BigDecimal
+}
+
+/** Faturamento diário para o relatório de série temporal. */
+interface DailyRevenueRow {
+    val day: java.time.LocalDate
+    val revenue: java.math.BigDecimal
+    val saleCount: Long
+}
+
+/** Faturamento agrupado (por canal ou por forma de pagamento). */
+interface GroupRevenueRow {
+    val label: String
+    val revenue: java.math.BigDecimal
+    val saleCount: Long
 }

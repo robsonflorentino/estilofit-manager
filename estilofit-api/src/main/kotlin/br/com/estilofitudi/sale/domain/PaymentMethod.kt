@@ -5,4 +5,5 @@ enum class PaymentMethod {
     PIX,
     DEBIT_CARD,
     CREDIT_CARD,
+    TRANSFER,
 }
