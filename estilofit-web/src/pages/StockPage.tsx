@@ -28,8 +28,8 @@ const adjustSchema = z.object({
 });
 type AdjustForm = z.infer<typeof adjustSchema>;
 
-const money = (n: number | null) =>
-  n === null ? "—" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const money = (n: number | null | undefined) =>
+  n == null ? "—" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export function StockPage() {
   const navigate = useNavigate();

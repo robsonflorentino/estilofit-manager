@@ -37,7 +37,9 @@ spring:
     validate-on-migrate: true
 
   jackson:
-    default-property-inclusion: non_null
+    # 'always' mantém campos null no JSON (ex: "salePrice": null), deixando o contrato
+    # fiel aos tipos do frontend (number | null) e evitando campos "sumindo" da resposta.
+    default-property-inclusion: always
     deserialization:
       fail-on-unknown-properties: false
     serialization:

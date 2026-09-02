@@ -75,8 +75,8 @@ export function VariantsPanel({ product, onClose }: VariantsPanelProps) {
     onError: (error) => toast.error(getApiErrorMessage(error)),
   });
 
-  const fmt = (n: number | null) =>
-    n === null ? "—" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const fmt = (n: number | null | undefined) =>
+    n == null ? "—" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
     <Modal open title={`Variações · ${product.name}`} onClose={onClose}>

@@ -34,7 +34,7 @@ interface ProductVariantRepository : JpaRepository<ProductVariant, UUID> {
         SELECT v FROM ProductVariant v
         WHERE (:productId IS NULL OR v.product.id = :productId)
           AND (:categoryId IS NULL OR v.product.category.id = :categoryId)
-          AND (:size = '' OR LOWER(v.size) = LOWER(:size))
+          AND (:variantSize = '' OR LOWER(v.size) = LOWER(:variantSize))
           AND (:color = '' OR LOWER(v.color) = LOWER(:color))
           AND (:lowStockThreshold IS NULL OR v.stockQuantity < :lowStockThreshold)
         ORDER BY v.product.name ASC, v.sku ASC
@@ -42,7 +42,7 @@ interface ProductVariantRepository : JpaRepository<ProductVariant, UUID> {
     fun findStockSummary(
         @Param("productId") productId: UUID?,
         @Param("categoryId") categoryId: UUID?,
-        @Param("size") size: String,
+        @Param("variantSize") variantSize: String,
         @Param("color") color: String,
         @Param("lowStockThreshold") lowStockThreshold: Int?,
         pageable: Pageable,

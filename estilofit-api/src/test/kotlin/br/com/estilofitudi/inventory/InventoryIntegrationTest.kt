@@ -158,6 +158,27 @@ class InventoryIntegrationTest @Autowired constructor(
     }
 
     @Test
+    fun `stock summary sem filtros lista as variacoes`() {
+        val token = managerToken()
+        val s = System.nanoTime().toString()
+        val variantId = setupVariant(token, s)
+
+        // resumo SEM nenhum filtro (cenário da tela de estoque) deve conter a variação criada
+        val json = mockMvc.perform(
+            get("/stock/summary").header("Authorization", token)
+                .param("page", "0").param("size", "50"),
+        ).andExpect(status().isOk).andReturn().response.contentAsString
+
+        val node = objectMapper.readTree(json)
+        org.junit.jupiter.api.Assertions.assertTrue(
+            node["totalElements"].asInt() >= 1,
+            "totalElements deveria ser >= 1",
+        )
+        val found = node["content"].any { it["variantId"].asText() == variantId }
+        org.junit.jupiter.api.Assertions.assertTrue(found, "a variação criada deveria aparecer no resumo")
+    }
+
+    @Test
     fun `registrar lote sem token retorna 401`() {
         mockMvc.perform(get("/supply-lots")).andExpect(status().isUnauthorized)
     }

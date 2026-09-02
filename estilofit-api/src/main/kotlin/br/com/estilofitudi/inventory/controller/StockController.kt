@@ -32,12 +32,13 @@ class StockController(private val stockService: StockService) {
     fun summary(
         @RequestParam(required = false) productId: UUID?,
         @RequestParam(required = false) categoryId: UUID?,
-        @RequestParam(name = "size", defaultValue = "") sizeFilter: String,
+        // Nome distinto de "size" para não colidir com o size do Pageable (paginação)
+        @RequestParam(name = "variantSize", defaultValue = "") variantSize: String,
         @RequestParam(defaultValue = "") color: String,
         @RequestParam(defaultValue = "false") lowStock: Boolean,
         @PageableDefault(size = 20) pageable: Pageable,
     ): ResponseEntity<PageResponse<StockSummaryItem>> =
-        ResponseEntity.ok(stockService.summary(productId, categoryId, sizeFilter, color, lowStock, pageable))
+        ResponseEntity.ok(stockService.summary(productId, categoryId, variantSize, color, lowStock, pageable))
 
     @GetMapping("/movements")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
