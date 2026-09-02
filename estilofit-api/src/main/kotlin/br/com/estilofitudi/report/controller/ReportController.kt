@@ -107,7 +107,7 @@ class ReportController(private val reportService: ReportService) {
         description = "🟡 Admin + Gestor — quantidade sugerida por variação com base nas vendas e no estoque",
     )
     fun purchaseSuggestion(
-        @RequestParam(defaultValue = "90") days: Int,
+        @RequestParam(defaultValue = "30") days: Int,
     ): ResponseEntity<PurchaseSuggestionReportResponse> =
         ResponseEntity.ok(reportService.purchaseSuggestion(days))
 }

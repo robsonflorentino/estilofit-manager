@@ -218,14 +218,19 @@ class ReportService(
                 belowMinimum = row.stockQuantity < lowStockThreshold,
                 estimatedCost = estimatedCost,
             )
-        }.sortedWith(
-            // urgência: menor cobertura primeiro; cobertura nula (sem giro) vai por último
-            compareBy(nullsLast()) { it.coverageDays },
-        )
+        }
+            // só o que importa: itens que realmente precisam de reposição
+            .filter { it.suggestedQty > 0 }
+            // urgência: menor cobertura primeiro
+            .sortedWith(compareBy(nullsLast()) { it.coverageDays })
+
+        val totalEstimatedCost = items.fold(BigDecimal.ZERO) { acc, it -> acc + it.estimatedCost }
 
         return PurchaseSuggestionReportResponse(
             referenceDays = refDays,
             coverageTargetDays = coverageTarget,
+            totalItems = items.size,
+            totalEstimatedCost = totalEstimatedCost.setScale(2, RoundingMode.HALF_UP),
             items = items,
         )
     }
