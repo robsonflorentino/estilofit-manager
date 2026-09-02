@@ -6,6 +6,9 @@ import { ProductsPage } from "./pages/ProductsPage";
 import { SuppliersPage } from "./pages/SuppliersPage";
 import { StockPage } from "./pages/StockPage";
 import { SupplyEntryPage } from "./pages/SupplyEntryPage";
+import { SalesPage } from "./pages/SalesPage";
+import { NovaVendaPage } from "./pages/NovaVendaPage";
+import { ReceivablesPage } from "./pages/ReceivablesPage";
 import { UsersPage } from "./pages/UsersPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
 import { AppLayout } from "./layouts/AppLayout";
@@ -28,12 +31,17 @@ function App() {
             {/* Consulta de estoque — todos os perfis */}
             <Route path="/stock" element={<StockPage />} />
 
+            {/* Vendas — todos os perfis (vendedor vê apenas as próprias) */}
+            <Route path="/sales" element={<SalesPage />} />
+            <Route path="/sales/new" element={<NovaVendaPage />} />
+
             {/* Admin + Gestor */}
             <Route element={<RoleRoute roles={["ADMIN", "MANAGER"]} />}>
               <Route path="/categories" element={<CategoriesPage />} />
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/suppliers" element={<SuppliersPage />} />
               <Route path="/stock/entry" element={<SupplyEntryPage />} />
+              <Route path="/receivables" element={<ReceivablesPage />} />
             </Route>
 
             {/* Admin */}
