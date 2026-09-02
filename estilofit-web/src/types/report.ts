@@ -64,3 +64,24 @@ export interface SellerRanking {
   saleCount: number;
   averageTicket: number;
 }
+
+export interface PurchaseSuggestion {
+  variantId: string;
+  sku: string;
+  productName: string;
+  size: string;
+  color: string;
+  stockQuantity: number;
+  soldQty: number;
+  dailyVelocity: number;
+  coverageDays: number | null;
+  suggestedQty: number;
+  belowMinimum: boolean;
+  estimatedCost: number;
+}
+
+export interface PurchaseSuggestionReport {
+  referenceDays: number;
+  coverageTargetDays: number;
+  items: PurchaseSuggestion[];
+}

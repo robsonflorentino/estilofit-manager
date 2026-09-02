@@ -2,6 +2,7 @@ package br.com.estilofitudi.report.controller
 
 import br.com.estilofitudi.report.dto.ChannelProfitResponse
 import br.com.estilofitudi.report.dto.DailyRevenueResponse
+import br.com.estilofitudi.report.dto.PurchaseSuggestionReportResponse
 import br.com.estilofitudi.report.dto.ReportSummaryResponse
 import br.com.estilofitudi.report.dto.RevenueSliceResponse
 import br.com.estilofitudi.report.dto.SalesTargetResponse
@@ -99,4 +100,14 @@ class ReportController(private val reportService: ReportService) {
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
     ): ResponseEntity<List<SellerRankingResponse>> =
         ResponseEntity.ok(reportService.sellerRanking(startDate, endDate))
+
+    @GetMapping("/purchase-suggestion")
+    @Operation(
+        summary = "Sugestão de compra do próximo lote",
+        description = "🟡 Admin + Gestor — quantidade sugerida por variação com base nas vendas e no estoque",
+    )
+    fun purchaseSuggestion(
+        @RequestParam(defaultValue = "90") days: Int,
+    ): ResponseEntity<PurchaseSuggestionReportResponse> =
+        ResponseEntity.ok(reportService.purchaseSuggestion(days))
 }

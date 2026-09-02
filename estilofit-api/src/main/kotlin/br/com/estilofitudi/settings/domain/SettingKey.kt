@@ -40,6 +40,10 @@ enum class SettingKey(
     SELLER_COMMISSION_PCT(
         "SELLER_COMMISSION_PCT", "Comissão do vendedor (%)",
         SettingType.DECIMAL, BigDecimal.ZERO, BigDecimal("100"), "5",
+    ),
+    PURCHASE_COVERAGE_DAYS(
+        "PURCHASE_COVERAGE_DAYS", "Cobertura de estoque desejada (dias)",
+        SettingType.INTEGER, BigDecimal.ONE, null, "30",
     );
 
     companion object {

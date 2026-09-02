@@ -64,6 +64,29 @@ data class ChannelProfitResponse(
     val saleCount: Long,
 )
 
+/** Sugestão de compra de uma variação para o próximo lote. */
+data class PurchaseSuggestionResponse(
+    val variantId: java.util.UUID,
+    val sku: String,
+    val productName: String,
+    val size: String,
+    val color: String,
+    val stockQuantity: Int,
+    val soldQty: Long,             // vendido no período de referência
+    val dailyVelocity: BigDecimal, // unidades vendidas por dia
+    val coverageDays: Int?,        // dias que o estoque atual ainda cobre (null = cobertura "infinita" quando velocidade ~0)
+    val suggestedQty: Int,         // quanto comprar para cobrir o horizonte-alvo
+    val belowMinimum: Boolean,     // estoque abaixo do mínimo configurado
+    val estimatedCost: BigDecimal, // sugestão × custo médio
+)
+
+/** Sugestão de compra: parâmetros usados + itens. */
+data class PurchaseSuggestionReportResponse(
+    val referenceDays: Int,
+    val coverageTargetDays: Int,
+    val items: List<PurchaseSuggestionResponse>,
+)
+
 /** Posição de um vendedor no ranking do período. */
 data class SellerRankingResponse(
     val position: Int,          // 1 = primeiro colocado

@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { Badge } from "../components/Badge";
 import { reportService } from "../services/reportService";
 import type { ReportPeriod } from "../types/report";
 import { PAYMENT_METHOD_LABELS } from "../types/sale";
@@ -100,6 +101,8 @@ export function ReportsPage() {
   const salesTarget = useQuery({ queryKey: ["report", "sales-target", targetMonths], queryFn: () => reportService.salesTarget(targetMonths) });
   const profitByChannel = useQuery({ queryKey: ["report", "profit-channel", ...key], queryFn: () => reportService.profitByChannel(period) });
   const sellerRanking = useQuery({ queryKey: ["report", "seller-ranking", ...key], queryFn: () => reportService.sellerRanking(period) });
+  const [refDays, setRefDays] = useState(90);
+  const purchaseSuggestion = useQuery({ queryKey: ["report", "purchase-suggestion", refDays], queryFn: () => reportService.purchaseSuggestion(refDays) });
 
   const dayData = (byDay.data ?? []).map((d) => ({ ...d, label: dayLabel(d.day) }));
   const topData = (top.data ?? []).map((t) => ({
@@ -114,6 +117,7 @@ export function ReportsPage() {
   const rankingData = sellerRanking.data ?? [];
   const podium = rankingData.slice(0, 3);
   const rest = rankingData.slice(3);
+  const purchaseData = purchaseSuggestion.data;
 
   return (
     <div>
@@ -411,6 +415,77 @@ export function ReportsPage() {
                   </table>
                 </div>
               )}
+            </div>
+          )}
+        </ChartCard>
+      </div>
+
+      {/* Sugestão de compra do próximo lote */}
+      <div className="mt-6">
+        <ChartCard title="Sugestão de compra do próximo lote">
+          <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-content-secondary">
+            <span>Baseado nas vendas dos últimos</span>
+            <select className="input-base w-28" value={refDays} onChange={(e) => setRefDays(Number(e.target.value))}>
+              {[30, 60, 90].map((n) => <option key={n} value={n}>{n} dias</option>)}
+            </select>
+            {purchaseData && (
+              <span>· cobertura desejada de <span className="text-content-primary">{purchaseData.coverageTargetDays} dias</span></span>
+            )}
+          </div>
+
+          {purchaseSuggestion.isLoading ? (
+            <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-brand-purple" /></div>
+          ) : !purchaseData || purchaseData.items.length === 0 ? (
+            <p className="py-16 text-center text-sm text-content-muted">Sem histórico de vendas suficiente para sugerir compras.</p>
+          ) : (
+            <div className="overflow-hidden rounded-card border border-border-subtle">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-bg-surface-raised text-xs uppercase tracking-wider text-content-secondary">
+                  <tr>
+                    <th className="px-3 py-2">Produto</th>
+                    <th className="px-3 py-2">Estoque</th>
+                    <th className="px-3 py-2">Vendas ({purchaseData.referenceDays}d)</th>
+                    <th className="px-3 py-2">Venda/dia</th>
+                    <th className="px-3 py-2">Cobertura</th>
+                    <th className="px-3 py-2">Sugestão</th>
+                    <th className="px-3 py-2">Custo estimado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-subtle">
+                  {purchaseData.items.map((p) => (
+                    <tr key={p.variantId} className="bg-bg-surface">
+                      <td className="px-3 py-2">
+                        <span className="font-mono text-xs text-brand-purple">{p.sku}</span>
+                        <span className="ml-2 text-content-secondary">{p.productName} · {p.size}/{p.color}</span>
+                      </td>
+                      <td className="px-3 py-2">
+                        {p.belowMinimum ? (
+                          <Badge variant="danger">{p.stockQuantity}</Badge>
+                        ) : (
+                          <span className="text-content-secondary">{p.stockQuantity}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-content-secondary">{p.soldQty}</td>
+                      <td className="px-3 py-2 text-content-secondary">{p.dailyVelocity}</td>
+                      <td className="px-3 py-2">
+                        {p.coverageDays == null ? (
+                          <span className="text-content-muted">—</span>
+                        ) : p.coverageDays <= purchaseData.coverageTargetDays ? (
+                          <Badge variant="warning">{p.coverageDays} dias</Badge>
+                        ) : (
+                          <span className="text-content-secondary">{p.coverageDays} dias</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 font-semibold text-content-primary">
+                        {p.suggestedQty > 0 ? `${p.suggestedQty} un` : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-content-secondary">
+                        {p.suggestedQty > 0 ? money(p.estimatedCost) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </ChartCard>

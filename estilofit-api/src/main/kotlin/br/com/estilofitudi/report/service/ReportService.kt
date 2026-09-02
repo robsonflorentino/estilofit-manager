@@ -171,6 +171,65 @@ class ReportService(
             .sortedByDescending { it.profit }
     }
 
+    /**
+     * Sugestão de compra para o próximo lote, com base nas vendas dos últimos [referenceDays]
+     * dias e na posição atual de estoque. Variações que não venderam no período não entram.
+     * Ordenado pela urgência (menor cobertura de estoque primeiro).
+     */
+    fun purchaseSuggestion(referenceDays: Int): PurchaseSuggestionReportResponse {
+        val refDays = referenceDays.coerceIn(1, 365)
+        val coverageTarget = settingsReader.purchaseCoverageDays()
+        val lowStockThreshold = settingsReader.lowStockThreshold()
+
+        val end = LocalDate.now().plusDays(1).atStartOfDay()
+        val start = LocalDate.now().minusDays((refDays - 1).toLong()).atStartOfDay()
+
+        val items = saleItemRepository.salesForPurchaseSuggestion(start, end).map { row ->
+            // velocidade = unidades vendidas / dias do período de referência
+            val dailyVelocity = BigDecimal(row.soldQty).divide(BigDecimal(refDays), 4, RoundingMode.HALF_UP)
+
+            // dias de cobertura = estoque / velocidade (null quando não há velocidade relevante)
+            val coverageDays = if (dailyVelocity > BigDecimal.ZERO) {
+                BigDecimal(row.stockQuantity).divide(dailyVelocity, 0, RoundingMode.FLOOR).toInt()
+            } else {
+                null
+            }
+
+            // demanda para o horizonte-alvo e sugestão de compra (o que falta, arredondado pra cima)
+            val demand = dailyVelocity.multiply(BigDecimal(coverageTarget))
+            val suggested = demand.subtract(BigDecimal(row.stockQuantity))
+                .setScale(0, RoundingMode.CEILING).toInt()
+                .coerceAtLeast(0)
+
+            val avgCost = row.averageCost ?: BigDecimal.ZERO
+            val estimatedCost = avgCost.multiply(BigDecimal(suggested)).setScale(2, RoundingMode.HALF_UP)
+
+            PurchaseSuggestionResponse(
+                variantId = row.variantId,
+                sku = row.sku,
+                productName = row.productName,
+                size = row.size,
+                color = row.color,
+                stockQuantity = row.stockQuantity,
+                soldQty = row.soldQty,
+                dailyVelocity = dailyVelocity.setScale(2, RoundingMode.HALF_UP),
+                coverageDays = coverageDays,
+                suggestedQty = suggested,
+                belowMinimum = row.stockQuantity < lowStockThreshold,
+                estimatedCost = estimatedCost,
+            )
+        }.sortedWith(
+            // urgência: menor cobertura primeiro; cobertura nula (sem giro) vai por último
+            compareBy(nullsLast()) { it.coverageDays },
+        )
+
+        return PurchaseSuggestionReportResponse(
+            referenceDays = refDays,
+            coverageTargetDays = coverageTarget,
+            items = items,
+        )
+    }
+
     /** Ranking de vendedores por faturamento no período (posição 1 = maior faturamento). */
     fun sellerRanking(startDate: LocalDate, endDate: LocalDate): List<SellerRankingResponse> {
         val (start, end) = window(startDate, endDate)

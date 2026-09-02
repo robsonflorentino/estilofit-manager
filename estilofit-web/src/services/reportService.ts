@@ -2,6 +2,7 @@ import { api } from "../lib/api";
 import type {
   ChannelProfit,
   DailyRevenue,
+  PurchaseSuggestionReport,
   ReportPeriod,
   ReportSummary,
   RevenueSlice,
@@ -50,6 +51,13 @@ export const reportService = {
 
   async sellerRanking(period: ReportPeriod): Promise<SellerRanking[]> {
     const { data } = await api.get<SellerRanking[]>("/reports/seller-ranking", { params: period });
+    return data;
+  },
+
+  async purchaseSuggestion(days: number): Promise<PurchaseSuggestionReport> {
+    const { data } = await api.get<PurchaseSuggestionReport>("/reports/purchase-suggestion", {
+      params: { days },
+    });
     return data;
   },
 };
