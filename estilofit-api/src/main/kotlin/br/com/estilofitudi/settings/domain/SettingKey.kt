@@ -36,6 +36,10 @@ enum class SettingKey(
     TARGET_PRO_LABORE(
         "TARGET_PRO_LABORE", "Pró-labore desejado (R$/mês)",
         SettingType.DECIMAL, BigDecimal.ZERO, null, "3000",
+    ),
+    SELLER_COMMISSION_PCT(
+        "SELLER_COMMISSION_PCT", "Comissão do vendedor (%)",
+        SettingType.DECIMAL, BigDecimal.ZERO, BigDecimal("100"), "5",
     );
 
     companion object {

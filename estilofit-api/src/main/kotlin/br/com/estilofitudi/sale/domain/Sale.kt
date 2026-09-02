@@ -45,6 +45,13 @@ class Sale(
     @Column(name = "card_fee_passed")
     var cardFeePassed: Boolean = true,
 
+    // Snapshot da comissão do vendedor no momento da venda (0 quando o vendedor não é SELLER)
+    @Column(name = "commission_pct", nullable = false, precision = 5, scale = 2)
+    var commissionPct: BigDecimal = BigDecimal.ZERO,
+
+    @Column(name = "commission_amount", nullable = false, precision = 10, scale = 2)
+    var commissionAmount: BigDecimal = BigDecimal.ZERO,
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     var status: SaleStatus = SaleStatus.CONFIRMED,

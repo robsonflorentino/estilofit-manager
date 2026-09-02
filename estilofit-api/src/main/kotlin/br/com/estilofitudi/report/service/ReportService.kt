@@ -39,7 +39,8 @@ class ReportService(
         } else {
             BigDecimal.ZERO.setScale(2)
         }
-        val profit = agg.revenue.subtract(agg.cost)
+        // Lucro = faturamento - custo das mercadorias - comissão dos vendedores
+        val profit = agg.revenue.subtract(agg.cost).subtract(agg.commission)
 
         return ReportSummaryResponse(
             revenue = agg.revenue.setScale(2, RoundingMode.HALF_UP),
@@ -114,10 +115,11 @@ class ReportService(
             val agg = byMonth[ym]
             val revenue = agg?.revenue ?: BigDecimal.ZERO
             val cost = agg?.cost ?: BigDecimal.ZERO
+            val commission = agg?.commission ?: BigDecimal.ZERO
 
-            // Fração de lucro real do mês; sem vendas usa a margem padrão
+            // Fração de lucro real do mês (líquida de custo e comissão); sem vendas usa a margem padrão
             val profitFraction = if (revenue > BigDecimal.ZERO) {
-                revenue.subtract(cost).divide(revenue, 6, RoundingMode.HALF_UP)
+                revenue.subtract(cost).subtract(commission).divide(revenue, 6, RoundingMode.HALF_UP)
             } else {
                 fallbackProfitFraction
             }

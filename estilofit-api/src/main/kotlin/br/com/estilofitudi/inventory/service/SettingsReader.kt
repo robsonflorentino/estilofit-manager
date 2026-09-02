@@ -26,6 +26,9 @@ class SettingsReader(private val settingsService: SettingsService) {
     /** Pró-labore desejado por mês (R$), base da meta de vendas. */
     fun targetProLabore(): BigDecimal = decimal(SettingKey.TARGET_PRO_LABORE)
 
+    /** Percentual de comissão do vendedor (sobre o faturamento da venda). */
+    fun sellerCommissionPct(): BigDecimal = decimal(SettingKey.SELLER_COMMISSION_PCT)
+
     private fun decimal(def: SettingKey): BigDecimal =
         settingsService.rawValue(def).toBigDecimalOrNull() ?: BigDecimal(def.fallback)
 

@@ -8,6 +8,7 @@ import {
   Truck,
   ShoppingBag,
   CreditCard,
+  HandCoins,
   BarChart2,
   Tag,
   Users,
@@ -35,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/suppliers", label: "Fornecedores", icon: Truck, roles: ["ADMIN", "MANAGER"] },
   { to: "/sales", label: "Vendas", icon: ShoppingBag, roles: ["ADMIN", "MANAGER", "SELLER"] },
   { to: "/receivables", label: "Contas a Receber", icon: CreditCard, roles: ["ADMIN", "MANAGER"] },
+  { to: "/commissions", label: "Comissões", icon: HandCoins, roles: ["ADMIN", "MANAGER"] },
   { to: "/reports", label: "Relatórios", icon: BarChart2, roles: ["ADMIN", "MANAGER"] },
   { to: "/promotions", label: "Alertas", icon: Tag, roles: ["ADMIN", "MANAGER"] },
 ];
