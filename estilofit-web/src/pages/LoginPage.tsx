@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { Lock, Mail, LogIn, Loader2 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { getApiErrorMessage } from "../lib/api";
+import logoEstilofit from "../assets/logo-estilofit.png";
 
 const loginSchema = z.object({
   email: z.string().min(1, "E-mail é obrigatório").email("E-mail inválido"),
@@ -43,12 +44,13 @@ export function LoginPage() {
     <div className="flex min-h-full items-center justify-center bg-bg-base px-4">
       <div className="w-full max-w-md">
         {/* Marca */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold tracking-tight">
-            <span className="text-content-primary">ESTILO</span>
-            <span className="text-brand-purple">FIT</span>
-          </h1>
-          <p className="mt-1 text-sm italic text-content-secondary">Moda Fitness</p>
+        <div className="mb-8 flex justify-center">
+          <img
+            src={logoEstilofit}
+            alt="EstiloFit — Moda Fitness"
+            className="w-40 select-none"
+            draggable={false}
+          />
         </div>
 
         {/* Card de login */}
