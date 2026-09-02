@@ -4,6 +4,8 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { SuppliersPage } from "./pages/SuppliersPage";
+import { StockPage } from "./pages/StockPage";
+import { SupplyEntryPage } from "./pages/SupplyEntryPage";
 import { UsersPage } from "./pages/UsersPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
 import { AppLayout } from "./layouts/AppLayout";
@@ -23,11 +25,15 @@ function App() {
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
 
+            {/* Consulta de estoque — todos os perfis */}
+            <Route path="/stock" element={<StockPage />} />
+
             {/* Admin + Gestor */}
             <Route element={<RoleRoute roles={["ADMIN", "MANAGER"]} />}>
               <Route path="/categories" element={<CategoriesPage />} />
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/suppliers" element={<SuppliersPage />} />
+              <Route path="/stock/entry" element={<SupplyEntryPage />} />
             </Route>
 
             {/* Admin */}
