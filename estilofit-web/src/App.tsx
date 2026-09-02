@@ -12,6 +12,7 @@ import { ReceivablesPage } from "./pages/ReceivablesPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { PromotionsPage } from "./pages/PromotionsPage";
 import { UsersPage } from "./pages/UsersPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
 import { AppLayout } from "./layouts/AppLayout";
 import { PrivateRoute } from "./routes/PrivateRoute";
@@ -51,6 +52,7 @@ function App() {
             {/* Admin */}
             <Route element={<RoleRoute roles={["ADMIN"]} />}>
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
         </Route>
