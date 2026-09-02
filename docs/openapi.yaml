@@ -1,0 +1,2099 @@
+openapi: 3.0.3
+info:
+  title: EstiloFit Manager API
+  description: |
+    API REST do sistema de gestão de estoque e vendas da loja EstiloFit — Moda Fitness.
+
+    ## Autenticação
+    A API utiliza **JWT Bearer Token**. Para autenticar:
+    1. Faça `POST /auth/login` com email e senha
+    2. Copie o `accessToken` retornado
+    3. Clique em **Authorize** e cole o token no campo `bearerAuth`
+
+    ## Perfis de Acesso
+    - 🔴 **ADMIN** — Administrador do sistema (gerencia usuários e configurações técnicas)
+    - 🟡 **MANAGER** — Gestor / Proprietário da loja (operação completa do negócio)
+    - 🟢 **SELLER** — Vendedor (registra vendas e consulta estoque)
+  version: 1.0.0
+  contact:
+    name: EstiloFit Manager
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Desenvolvimento local
+
+tags:
+  - name: Autenticação
+    description: Login, logout e renovação de token
+  - name: Usuários
+    description: Gerenciamento de usuários do sistema
+  - name: Produtos
+    description: Cadastro e gestão de produtos
+  - name: Variações
+    description: Variações de produto (tamanho e cor)
+  - name: Categorias
+    description: Categorias de produto
+  - name: Fornecedores
+    description: Cadastro e gestão de fornecedores
+  - name: Lotes de Entrada
+    description: Entrada de mercadoria e atualização de estoque
+  - name: Estoque
+    description: Consulta de estoque e movimentações
+  - name: Canais de Venda
+    description: Canais onde as vendas são realizadas
+  - name: Vendas
+    description: Registro e gestão de vendas
+  - name: Parcelas
+    description: Contas a receber e fluxo de caixa projetado
+  - name: Alertas de Promoção
+    description: Alertas de peças paradas no estoque
+  - name: Relatórios
+    description: Relatórios e indicadores do negócio
+  - name: Configurações
+    description: Configurações técnicas do sistema
+
+security:
+  - bearerAuth: []
+
+paths:
+
+  # ─── AUTENTICAÇÃO ────────────────────────────────────────────
+
+  /auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Login
+      description: Autentica o usuário e retorna os tokens de acesso.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Autenticação]
+      summary: Renovar token
+      description: Renova o access token usando o refresh token (httpOnly cookie).
+      security: []
+      responses:
+        '200':
+          description: Token renovado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Autenticação]
+      summary: Logout
+      description: Invalida o refresh token e encerra a sessão.
+      responses:
+        '204':
+          description: Logout realizado com sucesso
+
+  # ─── USUÁRIOS ────────────────────────────────────────────────
+
+  /users:
+    get:
+      tags: [Usuários]
+      summary: Listar usuários
+      description: 🔴 Apenas Admin
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: name
+          in: query
+          schema: { type: string }
+        - name: role
+          in: query
+          schema: { $ref: '#/components/schemas/Role' }
+        - name: active
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Lista paginada de usuários
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedUsers'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Usuários]
+      summary: Criar usuário
+      description: 🔴 Apenas Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Usuário criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /users/me:
+    get:
+      tags: [Usuários]
+      summary: Meus dados
+      description: 🟢 Qualquer role — retorna dados do usuário logado
+      responses:
+        '200':
+          description: Dados do usuário logado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /users/me/password:
+    patch:
+      tags: [Usuários]
+      summary: Alterar minha senha
+      description: 🟢 Qualquer role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeMyPasswordRequest'
+      responses:
+        '204':
+          description: Senha alterada com sucesso
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/{id}:
+    get:
+      tags: [Usuários]
+      summary: Buscar usuário por ID
+      description: 🔴 Apenas Admin
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Usuário encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Usuários]
+      summary: Atualizar usuário
+      description: 🔴 Apenas Admin
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Usuário atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /users/{id}/status:
+    patch:
+      tags: [Usuários]
+      summary: Ativar/desativar usuário
+      description: 🔴 Apenas Admin
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+      responses:
+        '200':
+          description: Status atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /users/{id}/password:
+    patch:
+      tags: [Usuários]
+      summary: Redefinir senha de usuário
+      description: 🔴 Apenas Admin
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '204':
+          description: Senha redefinida com sucesso
+
+  # ─── CATEGORIAS ──────────────────────────────────────────────
+
+  /categories:
+    get:
+      tags: [Categorias]
+      summary: Listar categorias
+      description: 🟢 Qualquer role
+      responses:
+        '200':
+          description: Lista de categorias
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryResponse'
+    post:
+      tags: [Categorias]
+      summary: Criar categoria
+      description: 🟡 Admin + Gestor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '201':
+          description: Categoria criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /categories/{id}:
+    put:
+      tags: [Categorias]
+      summary: Renomear categoria
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '200':
+          description: Categoria atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+
+  /categories/{id}/status:
+    patch:
+      tags: [Categorias]
+      summary: Ativar/desativar categoria
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+      responses:
+        '200':
+          description: Status atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+
+  # ─── PRODUTOS ────────────────────────────────────────────────
+
+  /products:
+    get:
+      tags: [Produtos]
+      summary: Listar produtos
+      description: 🟢 Qualquer role
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: name
+          in: query
+          schema: { type: string }
+        - name: categoryId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: active
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Lista paginada de produtos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedProducts'
+    post:
+      tags: [Produtos]
+      summary: Criar produto
+      description: 🟡 Admin + Gestor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          description: Produto criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /products/{id}:
+    get:
+      tags: [Produtos]
+      summary: Buscar produto com variações
+      description: 🟢 Qualquer role
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Produto com variações
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Produtos]
+      summary: Atualizar produto
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '200':
+          description: Produto atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /products/{id}/status:
+    patch:
+      tags: [Produtos]
+      summary: Ativar/desativar produto
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+      responses:
+        '200':
+          description: Status atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetailResponse'
+
+  # ─── VARIAÇÕES ───────────────────────────────────────────────
+
+  /products/{productId}/variants:
+    post:
+      tags: [Variações]
+      summary: Adicionar variação ao produto
+      description: 🟡 Admin + Gestor
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVariantRequest'
+      responses:
+        '201':
+          description: Variação criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariantResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /products/{productId}/variants/{variantId}:
+    put:
+      tags: [Variações]
+      summary: Atualizar variação
+      description: 🟡 Admin + Gestor
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: variantId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVariantRequest'
+      responses:
+        '200':
+          description: Variação atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariantResponse'
+
+  /products/{productId}/variants/{variantId}/status:
+    patch:
+      tags: [Variações]
+      summary: Ativar/desativar variação
+      description: 🟡 Admin + Gestor
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: variantId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+      responses:
+        '200':
+          description: Status atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariantResponse'
+
+  # ─── FORNECEDORES ────────────────────────────────────────────
+
+  /suppliers:
+    get:
+      tags: [Fornecedores]
+      summary: Listar fornecedores
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: name
+          in: query
+          schema: { type: string }
+        - name: active
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Lista paginada de fornecedores
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedSuppliers'
+    post:
+      tags: [Fornecedores]
+      summary: Criar fornecedor
+      description: 🟡 Admin + Gestor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+      responses:
+        '201':
+          description: Fornecedor criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /suppliers/{id}:
+    get:
+      tags: [Fornecedores]
+      summary: Buscar fornecedor por ID
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Fornecedor encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Fornecedores]
+      summary: Atualizar fornecedor
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+      responses:
+        '200':
+          description: Fornecedor atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+
+  /suppliers/{id}/status:
+    patch:
+      tags: [Fornecedores]
+      summary: Ativar/desativar fornecedor
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+      responses:
+        '200':
+          description: Status atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+
+  # ─── LOTES DE ENTRADA ────────────────────────────────────────
+
+  /supply-lots:
+    get:
+      tags: [Lotes de Entrada]
+      summary: Listar lotes de entrada
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: supplierId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: startDate
+          in: query
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Lista paginada de lotes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedSupplyLots'
+    post:
+      tags: [Lotes de Entrada]
+      summary: Registrar lote de entrada
+      description: |
+        🟡 Admin + Gestor
+
+        Operação atômica: ao confirmar, o estoque é incrementado e o custo médio ponderado
+        de cada variação é recalculado automaticamente com o frete rateado por valor.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSupplyLotRequest'
+      responses:
+        '201':
+          description: Lote registrado e estoque atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyLotResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /supply-lots/{id}:
+    get:
+      tags: [Lotes de Entrada]
+      summary: Buscar lote por ID
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Lote com detalhes e rateio de frete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyLotResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── ESTOQUE ─────────────────────────────────────────────────
+
+  /stock/summary:
+    get:
+      tags: [Estoque]
+      summary: Resumo do estoque atual
+      description: 🟢 Qualquer role
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: productId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: categoryId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: size
+          in: query
+          schema: { type: string }
+        - name: color
+          in: query
+          schema: { type: string }
+        - name: lowStock
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Resumo do estoque por variação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedStockSummary'
+
+  /stock/movements:
+    get:
+      tags: [Estoque]
+      summary: Histórico de movimentações
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: variantId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/StockMovementType' }
+        - name: startDate
+          in: query
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Lista paginada de movimentações
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedStockMovements'
+
+  /stock/adjustments:
+    post:
+      tags: [Estoque]
+      summary: Ajuste manual de estoque
+      description: 🟡 Admin + Gestor — justificativa obrigatória
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+      responses:
+        '201':
+          description: Ajuste registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockMovementResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  # ─── CANAIS DE VENDA ─────────────────────────────────────────
+
+  /sale-channels:
+    get:
+      tags: [Canais de Venda]
+      summary: Listar canais de venda
+      description: 🟢 Qualquer role
+      responses:
+        '200':
+          description: Lista de canais
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SaleChannelResponse'
+    post:
+      tags: [Canais de Venda]
+      summary: Criar canal de venda
+      description: 🟡 Admin + Gestor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleChannelRequest'
+      responses:
+        '201':
+          description: Canal criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleChannelResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /sale-channels/{id}/status:
+    patch:
+      tags: [Canais de Venda]
+      summary: Ativar/desativar canal de venda
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusRequest'
+      responses:
+        '200':
+          description: Status atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleChannelResponse'
+
+  # ─── VENDAS ──────────────────────────────────────────────────
+
+  /sales:
+    get:
+      tags: [Vendas]
+      summary: Listar vendas
+      description: |
+        🟡 Admin + Gestor — vê todas as vendas
+        🟢 Vendedor — vê apenas suas próprias vendas (filtro aplicado automaticamente)
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: channelId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: paymentMethod
+          in: query
+          schema: { $ref: '#/components/schemas/PaymentMethod' }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/SaleStatus' }
+        - name: startDate
+          in: query
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          schema: { type: string, format: date }
+        - name: sellerId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Lista paginada de vendas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedSales'
+    post:
+      tags: [Vendas]
+      summary: Registrar venda
+      description: |
+        🟢 Qualquer role
+
+        Operação atômica: valida estoque de todos os itens, debita quantidades,
+        registra movimentações e gera parcelas automaticamente se parcelado no cartão.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSaleRequest'
+      responses:
+        '201':
+          description: Venda confirmada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /sales/{id}:
+    get:
+      tags: [Vendas]
+      summary: Buscar venda por ID
+      description: 🟡 Admin + Gestor | 🟢 Vendedor (apenas próprias)
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Detalhes completos da venda
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleDetailResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sales/{id}/cancel:
+    patch:
+      tags: [Vendas]
+      summary: Cancelar venda
+      description: 🟡 Admin + Gestor — restaura estoque e cancela parcelas pendentes
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelSaleRequest'
+      responses:
+        '200':
+          description: Venda cancelada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  # ─── PARCELAS ────────────────────────────────────────────────
+
+  /installments:
+    get:
+      tags: [Parcelas]
+      summary: Listar parcelas
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/InstallmentStatus' }
+        - name: startDueDate
+          in: query
+          schema: { type: string, format: date }
+        - name: endDueDate
+          in: query
+          schema: { type: string, format: date }
+        - name: saleId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Lista paginada de parcelas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedInstallments'
+
+  /installments/projected:
+    get:
+      tags: [Parcelas]
+      summary: Fluxo de caixa projetado
+      description: 🟡 Admin + Gestor — parcelas agrupadas por mês de vencimento
+      parameters:
+        - name: months
+          in: query
+          schema: { type: integer, default: 3, minimum: 1, maximum: 12 }
+      responses:
+        '200':
+          description: Fluxo projetado por mês
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectedMonthResponse'
+
+  /installments/{id}/receive:
+    patch:
+      tags: [Parcelas]
+      summary: Confirmar recebimento de parcela
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiveInstallmentRequest'
+      responses:
+        '200':
+          description: Parcela marcada como recebida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallmentResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  # ─── ALERTAS DE PROMOÇÃO ─────────────────────────────────────
+
+  /promotion-alerts:
+    get:
+      tags: [Alertas de Promoção]
+      summary: Listar alertas de promoção
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/PromotionAlertStatus' }
+      responses:
+        '200':
+          description: Lista paginada de alertas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedPromotionAlerts'
+
+  /promotion-alerts/{id}/dismiss:
+    patch:
+      tags: [Alertas de Promoção]
+      summary: Dispensar alerta temporariamente
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DismissAlertRequest'
+      responses:
+        '200':
+          description: Alerta dispensado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromotionAlertResponse'
+
+  /promotion-alerts/{id}/resolve:
+    patch:
+      tags: [Alertas de Promoção]
+      summary: Resolver alerta permanentemente
+      description: 🟡 Admin + Gestor
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Alerta resolvido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromotionAlertResponse'
+
+  # ─── RELATÓRIOS ──────────────────────────────────────────────
+
+  /reports/stock:
+    get:
+      tags: [Relatórios]
+      summary: Relatório de estoque
+      description: 🟡 Admin + Gestor
+      parameters:
+        - name: categoryId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: lowStockOnly
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Relatório de estoque atual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockReportResponse'
+
+  /reports/sales:
+    get:
+      tags: [Relatórios]
+      summary: Relatório de vendas do período
+      description: 🟡 Admin + Gestor
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: channelId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: paymentMethod
+          in: query
+          schema: { $ref: '#/components/schemas/PaymentMethod' }
+      responses:
+        '200':
+          description: Relatório de vendas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesReportResponse'
+
+  /reports/top-products:
+    get:
+      tags: [Relatórios]
+      summary: Produtos mais vendidos
+      description: 🟡 Admin + Gestor
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10, minimum: 1, maximum: 50 }
+      responses:
+        '200':
+          description: Ranking de produtos mais vendidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopProductsReportResponse'
+
+  /reports/profit-margin:
+    get:
+      tags: [Relatórios]
+      summary: Margem de lucro por produto
+      description: 🟡 Admin + Gestor
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: categoryId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Relatório de margem de lucro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfitMarginReportResponse'
+
+  /reports/pro-labore:
+    get:
+      tags: [Relatórios]
+      summary: Pró-labore estimado
+      description: 🟡 Admin + Gestor
+      parameters:
+        - name: month
+          in: query
+          schema: { type: string, pattern: '^\d{4}-\d{2}$', example: '2026-09' }
+      responses:
+        '200':
+          description: Estimativa de pró-labore do mês
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProLaboreReportResponse'
+
+  /reports/my-sales:
+    get:
+      tags: [Relatórios]
+      summary: Minhas vendas
+      description: 🟢 Qualquer role — vendas do usuário logado
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Relatório de vendas do usuário logado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MySalesReportResponse'
+
+  # ─── CONFIGURAÇÕES ───────────────────────────────────────────
+
+  /settings:
+    get:
+      tags: [Configurações]
+      summary: Listar configurações do sistema
+      description: 🔴 Apenas Admin
+      responses:
+        '200':
+          description: Lista de configurações
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SettingResponse'
+
+  /settings/{key}:
+    put:
+      tags: [Configurações]
+      summary: Atualizar configuração
+      description: 🔴 Apenas Admin
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema: { type: string }
+          example: DEFAULT_PROFIT_MARGIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSettingRequest'
+      responses:
+        '200':
+          description: Configuração atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ─── COMPONENTS ──────────────────────────────────────────────────────────────
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtido via POST /auth/login
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PageParam:
+      name: page
+      in: query
+      schema: { type: integer, default: 0, minimum: 0 }
+    SizeParam:
+      name: size
+      in: query
+      schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+
+  responses:
+    BadRequest:
+      description: Dados inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Não autenticado ou token inválido/expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Sem permissão para esta ação
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflito — recurso já existe
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Regra de negócio violada (ex. estoque insuficiente)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+
+    # ── Enums ──────────────────────────────────────────────────
+
+    Role:
+      type: string
+      enum: [ADMIN, MANAGER, SELLER]
+
+    PaymentMethod:
+      type: string
+      enum: [CASH, PIX, DEBIT_CARD, CREDIT_CARD]
+
+    SaleStatus:
+      type: string
+      enum: [CONFIRMED, CANCELLED]
+
+    StockMovementType:
+      type: string
+      enum: [ENTRY, SALE, ADJUSTMENT]
+
+    InstallmentStatus:
+      type: string
+      enum: [PENDING, RECEIVED, CANCELLED]
+
+    PromotionAlertStatus:
+      type: string
+      enum: [ACTIVE, DISMISSED, RESOLVED]
+
+    # ── Paginação ──────────────────────────────────────────────
+
+    PageMeta:
+      type: object
+      properties:
+        page:      { type: integer }
+        size:      { type: integer }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+
+    # ── Erros ──────────────────────────────────────────────────
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp: { type: string, format: date-time }
+        status:    { type: integer }
+        error:     { type: string }
+        message:   { type: string }
+        path:      { type: string }
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:   { type: string }
+              message: { type: string }
+
+    # ── Auth ───────────────────────────────────────────────────
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:    { type: string, format: email }
+        password: { type: string, minLength: 8 }
+
+    LoginResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        tokenType:   { type: string, example: Bearer }
+        expiresIn:   { type: integer, example: 28800 }
+        user:        { $ref: '#/components/schemas/UserResponse' }
+
+    RefreshResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        tokenType:   { type: string, example: Bearer }
+        expiresIn:   { type: integer, example: 28800 }
+
+    # ── Usuários ───────────────────────────────────────────────
+
+    UserResponse:
+      type: object
+      properties:
+        id:        { type: string, format: uuid }
+        name:      { type: string }
+        email:     { type: string, format: email }
+        role:      { $ref: '#/components/schemas/Role' }
+        active:    { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    UserSummary:
+      type: object
+      properties:
+        id:   { type: string, format: uuid }
+        name: { type: string }
+
+    CreateUserRequest:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name:     { type: string, minLength: 2 }
+        email:    { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        role:     { $ref: '#/components/schemas/Role' }
+
+    UpdateUserRequest:
+      type: object
+      required: [name, email, role]
+      properties:
+        name:  { type: string, minLength: 2 }
+        email: { type: string, format: email }
+        role:  { $ref: '#/components/schemas/Role' }
+
+    ChangeMyPasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword: { type: string }
+        newPassword:     { type: string, minLength: 8 }
+
+    ResetPasswordRequest:
+      type: object
+      required: [newPassword]
+      properties:
+        newPassword: { type: string, minLength: 8 }
+
+    StatusRequest:
+      type: object
+      required: [active]
+      properties:
+        active: { type: boolean }
+
+    PagedUsers:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserResponse'
+
+    # ── Categorias ─────────────────────────────────────────────
+
+    CategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 2 }
+
+    CategoryResponse:
+      type: object
+      properties:
+        id:     { type: string, format: uuid }
+        name:   { type: string }
+        active: { type: boolean }
+
+    CategorySummary:
+      type: object
+      properties:
+        id:   { type: string, format: uuid }
+        name: { type: string }
+
+    # ── Produtos ───────────────────────────────────────────────
+
+    CreateProductRequest:
+      type: object
+      required: [name, categoryId]
+      properties:
+        name:        { type: string, minLength: 2 }
+        description: { type: string }
+        categoryId:  { type: string, format: uuid }
+
+    ProductSummaryResponse:
+      type: object
+      properties:
+        id:           { type: string, format: uuid }
+        name:         { type: string }
+        category:     { $ref: '#/components/schemas/CategorySummary' }
+        active:       { type: boolean }
+        variantCount: { type: integer }
+        totalStock:   { type: integer }
+        createdAt:    { type: string, format: date-time }
+
+    ProductDetailResponse:
+      type: object
+      properties:
+        id:          { type: string, format: uuid }
+        name:        { type: string }
+        description: { type: string }
+        category:    { $ref: '#/components/schemas/CategorySummary' }
+        active:      { type: boolean }
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariantResponse'
+        createdAt:   { type: string, format: date-time }
+        updatedAt:   { type: string, format: date-time }
+
+    PagedProducts:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProductSummaryResponse'
+
+    # ── Variações ──────────────────────────────────────────────
+
+    CreateVariantRequest:
+      type: object
+      required: [size, color]
+      properties:
+        size:         { type: string, example: M }
+        color:        { type: string, example: Azul }
+        profitMargin: { type: number, format: double, nullable: true, description: "null herda a margem global" }
+
+    UpdateVariantRequest:
+      type: object
+      properties:
+        profitMargin: { type: number, format: double, nullable: true }
+        salePrice:    { type: number, format: double, nullable: true }
+
+    VariantResponse:
+      type: object
+      properties:
+        id:            { type: string, format: uuid }
+        sku:           { type: string, example: BLS-001-M-AZL }
+        size:          { type: string }
+        color:         { type: string }
+        salePrice:     { type: number, format: double, nullable: true }
+        averageCost:   { type: number, format: double, nullable: true }
+        profitMargin:  { type: number, format: double, nullable: true }
+        stockQuantity: { type: integer }
+        active:        { type: boolean }
+
+    VariantSummary:
+      type: object
+      properties:
+        id:          { type: string, format: uuid }
+        sku:         { type: string }
+        productName: { type: string }
+        size:        { type: string }
+        color:       { type: string }
+
+    # ── Fornecedores ───────────────────────────────────────────
+
+    SupplierRequest:
+      type: object
+      required: [name]
+      properties:
+        name:         { type: string }
+        contactPhone: { type: string }
+        contactEmail: { type: string, format: email }
+        whatsapp:     { type: string }
+        cnpj:         { type: string }
+        address:      { type: string }
+        notes:        { type: string }
+
+    SupplierResponse:
+      type: object
+      properties:
+        id:           { type: string, format: uuid }
+        name:         { type: string }
+        contactPhone: { type: string }
+        contactEmail: { type: string }
+        whatsapp:     { type: string }
+        cnpj:         { type: string }
+        address:      { type: string }
+        notes:        { type: string }
+        active:       { type: boolean }
+        createdAt:    { type: string, format: date-time }
+
+    SupplierSummary:
+      type: object
+      properties:
+        id:   { type: string, format: uuid }
+        name: { type: string }
+
+    PagedSuppliers:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/SupplierResponse'
+
+    # ── Lotes de Entrada ───────────────────────────────────────
+
+    CreateSupplyLotRequest:
+      type: object
+      required: [supplierId, receivedAt, items]
+      properties:
+        supplierId:   { type: string, format: uuid }
+        receivedAt:   { type: string, format: date }
+        freightCost:  { type: number, format: double, default: 0 }
+        notes:        { type: string }
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [variantId, quantity, unitCost]
+            properties:
+              variantId: { type: string, format: uuid }
+              quantity:  { type: integer, minimum: 1 }
+              unitCost:  { type: number, format: double, minimum: 0.01 }
+
+    SupplyLotItemResponse:
+      type: object
+      properties:
+        id:           { type: string, format: uuid }
+        variant:      { $ref: '#/components/schemas/VariantSummary' }
+        quantity:     { type: integer }
+        unitCost:     { type: number, format: double }
+        freightShare: { type: number, format: double }
+        realUnitCost: { type: number, format: double }
+
+    SupplyLotResponse:
+      type: object
+      properties:
+        id:          { type: string, format: uuid }
+        supplier:    { $ref: '#/components/schemas/SupplierSummary' }
+        receivedAt:  { type: string, format: date }
+        freightCost: { type: number, format: double }
+        totalCost:   { type: number, format: double }
+        notes:       { type: string }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyLotItemResponse'
+        createdBy:   { $ref: '#/components/schemas/UserSummary' }
+        createdAt:   { type: string, format: date-time }
+
+    SupplyLotSummaryResponse:
+      type: object
+      properties:
+        id:          { type: string, format: uuid }
+        supplier:    { $ref: '#/components/schemas/SupplierSummary' }
+        receivedAt:  { type: string, format: date }
+        freightCost: { type: number, format: double }
+        totalCost:   { type: number, format: double }
+        itemCount:   { type: integer }
+        createdBy:   { $ref: '#/components/schemas/UserSummary' }
+        createdAt:   { type: string, format: date-time }
+
+    PagedSupplyLots:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/SupplyLotSummaryResponse'
+
+    # ── Estoque ────────────────────────────────────────────────
+
+    StockAdjustmentRequest:
+      type: object
+      required: [variantId, quantity, notes]
+      properties:
+        variantId: { type: string, format: uuid }
+        quantity:  { type: integer, description: "Positivo = entrada, negativo = saída" }
+        notes:     { type: string, minLength: 5, description: "Justificativa obrigatória" }
+
+    StockMovementResponse:
+      type: object
+      properties:
+        id:            { type: string, format: uuid }
+        variant:       { $ref: '#/components/schemas/VariantSummary' }
+        type:          { $ref: '#/components/schemas/StockMovementType' }
+        quantity:      { type: integer }
+        referenceType: { type: string }
+        referenceId:   { type: string, format: uuid }
+        notes:         { type: string }
+        user:          { $ref: '#/components/schemas/UserSummary' }
+        createdAt:     { type: string, format: date-time }
+
+    StockSummaryItem:
+      type: object
+      properties:
+        variantId:     { type: string, format: uuid }
+        sku:           { type: string }
+        productName:   { type: string }
+        category:      { type: string }
+        size:          { type: string }
+        color:         { type: string }
+        stockQuantity: { type: integer }
+        salePrice:     { type: number, format: double }
+        averageCost:   { type: number, format: double }
+        isLowStock:    { type: boolean }
+        isZeroStock:   { type: boolean }
+
+    PagedStockSummary:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/StockSummaryItem'
+
+    PagedStockMovements:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/StockMovementResponse'
+
+    # ── Canais de Venda ────────────────────────────────────────
+
+    SaleChannelRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+
+    SaleChannelResponse:
+      type: object
+      properties:
+        id:     { type: string, format: uuid }
+        name:   { type: string }
+        active: { type: boolean }
+
+    SaleChannelSummary:
+      type: object
+      properties:
+        id:   { type: string, format: uuid }
+        name: { type: string }
+
+    # ── Vendas ─────────────────────────────────────────────────
+
+    CreateSaleRequest:
+      type: object
+      required: [channelId, paymentMethod, items]
+      properties:
+        channelId:      { type: string, format: uuid }
+        paymentMethod:  { $ref: '#/components/schemas/PaymentMethod' }
+        installments:   { type: integer, default: 1, minimum: 1 }
+        cardFeePct:     { type: number, format: double, nullable: true, description: "Obrigatório para CREDIT_CARD parcelado" }
+        cardFeePassed:  { type: boolean, default: true }
+        discountAmount: { type: number, format: double, default: 0 }
+        notes:          { type: string }
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [variantId, quantity, unitPrice]
+            properties:
+              variantId:  { type: string, format: uuid }
+              quantity:   { type: integer, minimum: 1 }
+              unitPrice:  { type: number, format: double, minimum: 0.01 }
+
+    SaleItemResponse:
+      type: object
+      properties:
+        id:         { type: string, format: uuid }
+        variant:    { $ref: '#/components/schemas/VariantSummary' }
+        quantity:   { type: integer }
+        unitPrice:  { type: number, format: double }
+        totalPrice: { type: number, format: double }
+
+    InstallmentResponse:
+      type: object
+      properties:
+        id:             { type: string, format: uuid }
+        installmentNum: { type: integer }
+        dueDate:        { type: string, format: date }
+        grossAmount:    { type: number, format: double }
+        netAmount:      { type: number, format: double }
+        status:         { $ref: '#/components/schemas/InstallmentStatus' }
+        receivedAt:     { type: string, format: date-time, nullable: true }
+        receivedBy:     { $ref: '#/components/schemas/UserSummary' }
+
+    SaleSummaryResponse:
+      type: object
+      properties:
+        id:             { type: string, format: uuid }
+        channel:        { $ref: '#/components/schemas/SaleChannelSummary' }
+        seller:         { $ref: '#/components/schemas/UserSummary' }
+        confirmedAt:    { type: string, format: date-time }
+        totalAmount:    { type: number, format: double }
+        discountAmount: { type: number, format: double }
+        finalAmount:    { type: number, format: double }
+        paymentMethod:  { $ref: '#/components/schemas/PaymentMethod' }
+        installments:   { type: integer }
+        status:         { $ref: '#/components/schemas/SaleStatus' }
+        itemCount:      { type: integer }
+
+    SaleDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/SaleSummaryResponse'
+        - type: object
+          properties:
+            cardFeePct:          { type: number, format: double, nullable: true }
+            cardFeePassed:       { type: boolean }
+            notes:               { type: string }
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/SaleItemResponse'
+            installmentSchedule:
+              type: array
+              items:
+                $ref: '#/components/schemas/InstallmentResponse'
+            cancelledBy:   { $ref: '#/components/schemas/UserSummary' }
+            cancelledAt:   { type: string, format: date-time, nullable: true }
+
+    CancelSaleRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 5 }
+
+    PagedSales:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/SaleSummaryResponse'
+
+    # ── Parcelas ───────────────────────────────────────────────
+
+    ReceiveInstallmentRequest:
+      type: object
+      required: [receivedAt]
+      properties:
+        receivedAt: { type: string, format: date }
+
+    InstallmentWithSaleResponse:
+      allOf:
+        - $ref: '#/components/schemas/InstallmentResponse'
+        - type: object
+          properties:
+            sale:
+              type: object
+              properties:
+                id:           { type: string, format: uuid }
+                confirmedAt:  { type: string, format: date-time }
+                finalAmount:  { type: number, format: double }
+
+    PagedInstallments:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/InstallmentWithSaleResponse'
+
+    ProjectedMonthResponse:
+      type: object
+      properties:
+        month:        { type: string, example: "2026-10" }
+        totalGross:   { type: number, format: double }
+        totalNet:     { type: number, format: double }
+        installments:
+          type: array
+          items:
+            $ref: '#/components/schemas/InstallmentWithSaleResponse'
+
+    # ── Alertas de Promoção ────────────────────────────────────
+
+    PromotionAlertResponse:
+      type: object
+      properties:
+        id:               { type: string, format: uuid }
+        variant:
+          allOf:
+            - $ref: '#/components/schemas/VariantSummary'
+            - type: object
+              properties:
+                stockQuantity: { type: integer }
+        daysWithoutSale:  { type: integer }
+        currentPrice:     { type: number, format: double }
+        suggestedPrice:   { type: number, format: double }
+        status:           { $ref: '#/components/schemas/PromotionAlertStatus' }
+        snoozedUntil:     { type: string, format: date, nullable: true }
+        createdAt:        { type: string, format: date-time }
+        resolvedAt:       { type: string, format: date-time, nullable: true }
+
+    DismissAlertRequest:
+      type: object
+      required: [snoozedUntil]
+      properties:
+        snoozedUntil: { type: string, format: date }
+
+    PagedPromotionAlerts:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/PromotionAlertResponse'
+
+    # ── Relatórios ─────────────────────────────────────────────
+
+    StockReportResponse:
+      type: object
+      properties:
+        generatedAt:    { type: string, format: date-time }
+        totalVariants:  { type: integer }
+        totalItems:     { type: integer }
+        lowStockCount:  { type: integer }
+        zeroStockCount: { type: integer }
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockSummaryItem'
+
+    SalesReportResponse:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            start: { type: string, format: date }
+            end:   { type: string, format: date }
+        totalSales:   { type: integer }
+        totalRevenue: { type: number, format: double }
+        totalDiscount:{ type: number, format: double }
+        netRevenue:   { type: number, format: double }
+        byChannel:
+          type: array
+          items:
+            type: object
+            properties:
+              channel:    { type: string }
+              salesCount: { type: integer }
+              revenue:    { type: number, format: double }
+        byPaymentMethod:
+          type: array
+          items:
+            type: object
+            properties:
+              method:     { type: string }
+              salesCount: { type: integer }
+              revenue:    { type: number, format: double }
+
+    TopProductsReportResponse:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            start: { type: string, format: date }
+            end:   { type: string, format: date }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              rank:         { type: integer }
+              productName:  { type: string }
+              category:     { type: string }
+              quantitySold: { type: integer }
+              totalRevenue: { type: number, format: double }
+              topVariant:
+                type: object
+                properties:
+                  sku:          { type: string }
+                  size:         { type: string }
+                  color:        { type: string }
+                  quantitySold: { type: integer }
+
+    ProfitMarginReportResponse:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            start: { type: string, format: date }
+            end:   { type: string, format: date }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              sku:              { type: string }
+              productName:      { type: string }
+              size:             { type: string }
+              color:            { type: string }
+              quantitySold:     { type: integer }
+              averageCost:      { type: number, format: double }
+              averageSalePrice: { type: number, format: double }
+              totalRevenue:     { type: number, format: double }
+              totalCost:        { type: number, format: double }
+              grossProfit:      { type: number, format: double }
+              marginPct:        { type: number, format: double }
+
+    ProLaboreReportResponse:
+      type: object
+      properties:
+        month:                   { type: string, example: "2026-09" }
+        revenue:                 { type: number, format: double }
+        cogs:                    { type: number, format: double }
+        freightCosts:            { type: number, format: double }
+        grossProfit:             { type: number, format: double }
+        workingCapitalEstimate:  { type: number, format: double }
+        workingCapitalBasedOnMonths: { type: integer }
+        suggestedProLabore:      { type: number, format: double }
+        canWithdraw:             { type: boolean }
+        warning:                 { type: string, nullable: true }
+
+    MySalesReportResponse:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            start: { type: string, format: date }
+            end:   { type: string, format: date }
+        sellerId:     { type: string, format: uuid }
+        sellerName:   { type: string }
+        totalSales:   { type: integer }
+        totalRevenue: { type: number, format: double }
+        sales:
+          type: array
+          items:
+            type: object
+            properties:
+              id:           { type: string, format: uuid }
+              confirmedAt:  { type: string, format: date-time }
+              channel:      { type: string }
+              finalAmount:  { type: number, format: double }
+              paymentMethod:{ type: string }
+              status:       { type: string }
+
+    # ── Configurações ──────────────────────────────────────────
+
+    SettingResponse:
+      type: object
+      properties:
+        key:         { type: string }
+        value:       { type: string }
+        description: { type: string }
+        updatedAt:   { type: string, format: date-time }
+
+    UpdateSettingRequest:
+      type: object
+      required: [value]
+      properties:
+        value: { type: string }

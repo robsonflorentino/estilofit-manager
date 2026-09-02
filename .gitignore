@@ -1,0 +1,31 @@
+# ── Segredos e ambiente (NUNCA versionar) ─────────────────────────
+.env
+**/.env
+!**/.env.example
+
+# ── Backend (Gradle / Kotlin) ─────────────────────────────────────
+.gradle/
+**/build/
+!**/src/**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# ── Frontend (Node / Vite) ────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+*.local
+
+# ── IDEs ──────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# ── Logs ──────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Sistema operacional ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
