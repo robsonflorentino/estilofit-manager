@@ -80,10 +80,12 @@ data class PurchaseSuggestionResponse(
     val estimatedCost: BigDecimal, // sugestão × custo médio
 )
 
-/** Sugestão de compra: parâmetros usados + itens. */
+/** Sugestão de compra: parâmetros usados + resumo + itens (apenas os que precisam de reposição). */
 data class PurchaseSuggestionReportResponse(
     val referenceDays: Int,
     val coverageTargetDays: Int,
+    val totalItems: Int,               // quantos itens precisam de compra
+    val totalEstimatedCost: BigDecimal, // custo estimado total do lote sugerido
     val items: List<PurchaseSuggestionResponse>,
 )
 

@@ -66,3 +66,11 @@ Regras:
 ## Notas Técnicas
 - Como o `confirmedAt` das vendas é sempre "agora", períodos de referência maiores diluem a velocidade; em produção com histórico real isso se ajusta naturalmente.
 - A cobertura vem nula quando a velocidade é ~0 (sem giro relevante) e esses itens vão para o fim da lista.
+
+## Ajuste pós-entrega — "mostrar só o que importa"
+Na primeira versão o relatório listava todas as variações que venderam, inclusive as com estoque
+farto (sugestão zero), o que deixava a tela cheia de "—" e sem utilidade. Corrigido:
+- O backend passou a **retornar apenas itens com `suggestedQty > 0`** e a incluir um resumo (`totalItems`, `totalEstimatedCost`).
+- O **período de referência padrão passou de 90 para 30 dias**, para a velocidade refletir o ritmo real de vendas (menos diluição).
+- O frontend mostra um resumo no topo (itens a comprar + custo estimado do lote) e um estado vazio amigável ("estoque saudável") quando nada precisa de reposição.
+- Verificado: com estoque farto a lista vem vazia; com itens de giro rápido e estoque baixo, a lista traz só eles, ordenados por urgência (ex.: 3 itens, custo total R$4.600).

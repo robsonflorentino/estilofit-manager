@@ -109,6 +109,11 @@ class ReportPurchaseSuggestionTest @Autowired constructor(
         assertEquals(15, mine["coverageDays"].asInt())
         // demanda 30 dias = 2*30 = 60; sugestão = 60 - 30 = 30
         assertEquals(30, mine["suggestedQty"].asInt())
+        // resumo: ao menos este item conta e o custo total cobre o dele
+        assertTrue(resp["totalItems"].asInt() >= 1)
+        assertTrue(resp["totalEstimatedCost"].decimalValue() >= mine["estimatedCost"].decimalValue())
+        // todos os itens listados têm sugestão > 0 (só o que importa)
+        assertTrue((0 until resp["items"].size()).all { resp["items"][it]["suggestedQty"].asInt() > 0 })
     }
 
     @Test
@@ -132,9 +137,8 @@ class ReportPurchaseSuggestionTest @Autowired constructor(
         val channelId = firstChannelId(token)
         sell(token, channelId, variantId, 5)
 
-        val mine = itemOf(suggestion(token, 90), variantId)
-        assertNotNull(mine)
-        assertEquals(0, mine!!["suggestedQty"].asInt())
+        // estoque cobre de sobra -> sugestão zero -> não aparece na lista (só o que importa)
+        assertNull(itemOf(suggestion(token, 90), variantId))
     }
 
     @Test

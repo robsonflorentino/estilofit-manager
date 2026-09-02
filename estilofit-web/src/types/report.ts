@@ -83,5 +83,7 @@ export interface PurchaseSuggestion {
 export interface PurchaseSuggestionReport {
   referenceDays: number;
   coverageTargetDays: number;
+  totalItems: number;
+  totalEstimatedCost: number;
   items: PurchaseSuggestion[];
 }

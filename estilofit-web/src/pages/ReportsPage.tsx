@@ -101,7 +101,7 @@ export function ReportsPage() {
   const salesTarget = useQuery({ queryKey: ["report", "sales-target", targetMonths], queryFn: () => reportService.salesTarget(targetMonths) });
   const profitByChannel = useQuery({ queryKey: ["report", "profit-channel", ...key], queryFn: () => reportService.profitByChannel(period) });
   const sellerRanking = useQuery({ queryKey: ["report", "seller-ranking", ...key], queryFn: () => reportService.sellerRanking(period) });
-  const [refDays, setRefDays] = useState(90);
+  const [refDays, setRefDays] = useState(30);
   const purchaseSuggestion = useQuery({ queryKey: ["report", "purchase-suggestion", refDays], queryFn: () => reportService.purchaseSuggestion(refDays) });
 
   const dayData = (byDay.data ?? []).map((d) => ({ ...d, label: dayLabel(d.day) }));
@@ -429,22 +429,33 @@ export function ReportsPage() {
               {[30, 60, 90].map((n) => <option key={n} value={n}>{n} dias</option>)}
             </select>
             {purchaseData && (
-              <span>· cobertura desejada de <span className="text-content-primary">{purchaseData.coverageTargetDays} dias</span></span>
+              <span>· para cobrir os próximos <span className="text-content-primary">{purchaseData.coverageTargetDays} dias</span></span>
             )}
           </div>
 
           {purchaseSuggestion.isLoading ? (
             <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-brand-purple" /></div>
           ) : !purchaseData || purchaseData.items.length === 0 ? (
-            <p className="py-16 text-center text-sm text-content-muted">Sem histórico de vendas suficiente para sugerir compras.</p>
+            <p className="py-16 text-center text-sm text-content-muted">Nenhum item precisa de reposição no momento. Estoque saudável!</p>
           ) : (
-            <div className="overflow-hidden rounded-card border border-border-subtle">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-bg-surface-raised text-xs uppercase tracking-wider text-content-secondary">
-                  <tr>
-                    <th className="px-3 py-2">Produto</th>
-                    <th className="px-3 py-2">Estoque</th>
-                    <th className="px-3 py-2">Vendas ({purchaseData.referenceDays}d)</th>
+            <>
+              <div className="mb-4 flex flex-wrap gap-6 text-sm">
+                <div>
+                  <span className="text-content-muted">Itens a comprar: </span>
+                  <span className="font-semibold text-content-primary">{purchaseData.totalItems}</span>
+                </div>
+                <div>
+                  <span className="text-content-muted">Custo estimado do lote: </span>
+                  <span className="font-semibold text-content-primary">{money(purchaseData.totalEstimatedCost)}</span>
+                </div>
+              </div>
+              <div className="overflow-hidden rounded-card border border-border-subtle">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-bg-surface-raised text-xs uppercase tracking-wider text-content-secondary">
+                    <tr>
+                      <th className="px-3 py-2">Produto</th>
+                      <th className="px-3 py-2">Estoque</th>
+                      <th className="px-3 py-2">Vendas ({purchaseData.referenceDays}d)</th>
                     <th className="px-3 py-2">Venda/dia</th>
                     <th className="px-3 py-2">Cobertura</th>
                     <th className="px-3 py-2">Sugestão</th>
@@ -484,9 +495,10 @@ export function ReportsPage() {
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </ChartCard>
       </div>
