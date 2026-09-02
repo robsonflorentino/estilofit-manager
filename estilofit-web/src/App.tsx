@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
+import { UsersPage } from "./pages/UsersPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
 import { AppLayout } from "./layouts/AppLayout";
 import { PrivateRoute } from "./routes/PrivateRoute";
@@ -23,6 +24,11 @@ function App() {
             {/* Admin + Gestor */}
             <Route element={<RoleRoute roles={["ADMIN", "MANAGER"]} />}>
               <Route path="/categories" element={<CategoriesPage />} />
+            </Route>
+
+            {/* Admin */}
+            <Route element={<RoleRoute roles={["ADMIN"]} />}>
+              <Route path="/users" element={<UsersPage />} />
             </Route>
           </Route>
         </Route>
