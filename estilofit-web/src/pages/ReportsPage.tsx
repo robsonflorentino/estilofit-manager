@@ -91,6 +91,7 @@ export function ReportsPage() {
   const byChannel = useQuery({ queryKey: ["report", "channel", ...key], queryFn: () => reportService.byChannel(period) });
   const byPayment = useQuery({ queryKey: ["report", "payment", ...key], queryFn: () => reportService.byPayment(period) });
   const salesTarget = useQuery({ queryKey: ["report", "sales-target", targetMonths], queryFn: () => reportService.salesTarget(targetMonths) });
+  const profitByChannel = useQuery({ queryKey: ["report", "profit-channel", ...key], queryFn: () => reportService.profitByChannel(period) });
 
   const dayData = (byDay.data ?? []).map((d) => ({ ...d, label: dayLabel(d.day) }));
   const topData = (top.data ?? []).map((t) => ({
@@ -101,6 +102,7 @@ export function ReportsPage() {
   const paymentData = (byPayment.data ?? []).map((p) => ({ ...p, label: paymentLabel(p.label) }));
   const targetData = (salesTarget.data?.months ?? []).map((m) => ({ ...m, label: monthLabel(m.month) }));
   const currentTarget = salesTarget.data?.months[salesTarget.data.months.length - 1];
+  const profitData = profitByChannel.data ?? [];
 
   return (
     <div>
@@ -283,6 +285,60 @@ export function ReportsPage() {
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
+          )}
+        </ChartCard>
+      </div>
+
+      {/* Lucratividade por canal (detalhado) */}
+      <div className="mt-6">
+        <ChartCard title="Lucratividade por canal">
+          {profitByChannel.isLoading ? (
+            <div className="flex h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-brand-purple" /></div>
+          ) : profitData.length === 0 ? (
+            <p className="py-16 text-center text-sm text-content-muted">Sem vendas no período.</p>
+          ) : (
+            <div className="space-y-6">
+              <ResponsiveContainer width="100%" height={Math.max(200, profitData.length * 48)}>
+                <BarChart data={profitData} layout="vertical" margin={{ top: 8, right: 24, bottom: 8, left: 8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" horizontal={false} />
+                  <XAxis type="number" stroke="#9ca3af" fontSize={12} tickFormatter={(v) => shortMoney(Number(v))} />
+                  <YAxis type="category" dataKey="channel" stroke="#9ca3af" fontSize={12} width={110} />
+                  <Tooltip
+                    formatter={moneyTip}
+                    contentStyle={{ background: "#1a1a24", border: "1px solid #2a2a3a", borderRadius: 8 }}
+                    labelStyle={{ color: "#e5e7eb" }}
+                  />
+                  <Bar dataKey="profit" name="Lucro" fill="#7c3aed" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+
+              <div className="overflow-hidden rounded-card border border-border-subtle">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-bg-surface-raised text-xs uppercase tracking-wider text-content-secondary">
+                    <tr>
+                      <th className="px-3 py-2">Canal</th>
+                      <th className="px-3 py-2">Faturamento</th>
+                      <th className="px-3 py-2">Custo</th>
+                      <th className="px-3 py-2">Lucro</th>
+                      <th className="px-3 py-2">Margem</th>
+                      <th className="px-3 py-2">Vendas</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-subtle">
+                    {profitData.map((c) => (
+                      <tr key={c.channel} className="bg-bg-surface">
+                        <td className="px-3 py-2 font-medium text-content-primary">{c.channel}</td>
+                        <td className="px-3 py-2 text-content-secondary">{money(c.revenue)}</td>
+                        <td className="px-3 py-2 text-content-secondary">{money(c.cost)}</td>
+                        <td className="px-3 py-2 font-medium text-content-primary">{money(c.profit)}</td>
+                        <td className="px-3 py-2 text-content-secondary">{c.marginPct}%</td>
+                        <td className="px-3 py-2 text-content-secondary">{c.saleCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </ChartCard>
       </div>

@@ -1,5 +1,6 @@
 package br.com.estilofitudi.report.controller
 
+import br.com.estilofitudi.report.dto.ChannelProfitResponse
 import br.com.estilofitudi.report.dto.DailyRevenueResponse
 import br.com.estilofitudi.report.dto.ReportSummaryResponse
 import br.com.estilofitudi.report.dto.RevenueSliceResponse
@@ -75,4 +76,15 @@ class ReportController(private val reportService: ReportService) {
         @RequestParam(defaultValue = "6") months: Int,
     ): ResponseEntity<SalesTargetResponse> =
         ResponseEntity.ok(reportService.salesTarget(months))
+
+    @GetMapping("/profit-by-channel")
+    @Operation(
+        summary = "Lucratividade por canal",
+        description = "🟡 Admin + Gestor — faturamento, custo, lucro e margem por canal no período",
+    )
+    fun profitByChannel(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
+    ): ResponseEntity<List<ChannelProfitResponse>> =
+        ResponseEntity.ok(reportService.profitByChannel(startDate, endDate))
 }

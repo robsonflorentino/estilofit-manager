@@ -1,10 +1,28 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { DollarSign, ShoppingBag, Package, Wallet, Target } from "lucide-react";
+import { DollarSign, ShoppingBag, Package, Wallet, Target, Store } from "lucide-react";
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
+} from "recharts";
 import type { LucideIcon } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { dashboardService } from "../services/dashboardService";
 import { reportService } from "../services/reportService";
+
+const shortMoney = (n: number | null | undefined) =>
+  n == null ? "—" : n.toLocaleString("pt-BR", { notation: "compact", style: "currency", currency: "BRL" });
+
+const moneyTip = (v: unknown) =>
+  v == null ? "R$ —" : Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+function firstDayOfMonthISO(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+}
+function todayISO(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
 
 const money = (n: number | null | undefined) =>
   n == null ? "R$ —" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -98,6 +116,57 @@ function MonthTargetCard() {
   );
 }
 
+/** Card compacto de lucro por canal no mês corrente (só gestão). */
+function ChannelProfitCard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard", "profit-by-channel"],
+    queryFn: () =>
+      reportService.profitByChannel({ startDate: firstDayOfMonthISO(), endDate: todayISO() }),
+  });
+
+  const top = data?.[0]; // já vem ordenado por lucro desc
+
+  return (
+    <div className="card mt-6">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <h2 className="flex items-center gap-2 font-semibold text-content-primary">
+          <Store className="h-5 w-5 text-brand-purple" /> Lucro por canal (mês)
+        </h2>
+        <Link to="/reports" className="text-xs text-brand-purple hover:underline">ver detalhado</Link>
+      </div>
+
+      {isLoading ? (
+        <div className="h-40 w-full animate-pulse rounded bg-bg-surface-raised" />
+      ) : !data || data.length === 0 ? (
+        <p className="py-8 text-center text-sm text-content-muted">Sem vendas no mês ainda.</p>
+      ) : (
+        <>
+          {top && (
+            <p className="mb-3 text-sm text-content-secondary">
+              Canal mais lucrativo:{" "}
+              <span className="font-semibold text-content-primary">{top.channel}</span>{" "}
+              ({money(top.profit)})
+            </p>
+          )}
+          <ResponsiveContainer width="100%" height={Math.max(160, data.length * 44)}>
+            <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" horizontal={false} />
+              <XAxis type="number" stroke="#9ca3af" fontSize={12} tickFormatter={(v) => shortMoney(Number(v))} />
+              <YAxis type="category" dataKey="channel" stroke="#9ca3af" fontSize={12} width={100} />
+              <Tooltip
+                formatter={moneyTip}
+                contentStyle={{ background: "#1a1a24", border: "1px solid #2a2a3a", borderRadius: 8 }}
+                labelStyle={{ color: "#e5e7eb" }}
+              />
+              <Bar dataKey="profit" name="Lucro" fill="#7c3aed" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const hasRole = useAuthStore((s) => s.hasRole);
@@ -153,8 +222,9 @@ export function DashboardPage() {
         )}
       </div>
 
-      {/* Meta do mês — apenas gestão */}
+      {/* Meta do mês e lucro por canal — apenas gestão */}
       {isManagement && <MonthTargetCard />}
+      {isManagement && <ChannelProfitCard />}
 
       {!isLoading && !showManagement && (
         <div className="card mt-6">

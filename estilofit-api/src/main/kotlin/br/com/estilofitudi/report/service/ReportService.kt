@@ -146,6 +146,29 @@ class ReportService(
         )
     }
 
+    /** Lucratividade por canal no período, ordenada do mais lucrativo (lucro absoluto) para o menos. */
+    fun profitByChannel(startDate: LocalDate, endDate: LocalDate): List<ChannelProfitResponse> {
+        val (start, end) = window(startDate, endDate)
+        return saleRepository.profitByChannel(start, end)
+            .map { r ->
+                val profit = r.revenue.subtract(r.cost)
+                val marginPct = if (r.revenue > BigDecimal.ZERO) {
+                    profit.multiply(BigDecimal(100)).divide(r.revenue, 2, RoundingMode.HALF_UP)
+                } else {
+                    BigDecimal.ZERO.setScale(2)
+                }
+                ChannelProfitResponse(
+                    channel = r.label,
+                    revenue = r.revenue.setScale(2, RoundingMode.HALF_UP),
+                    cost = r.cost.setScale(2, RoundingMode.HALF_UP),
+                    profit = profit.setScale(2, RoundingMode.HALF_UP),
+                    marginPct = marginPct,
+                    saleCount = r.saleCount,
+                )
+            }
+            .sortedByDescending { it.profit }
+    }
+
     private fun toSlices(rows: List<GroupRevenueRow>): List<RevenueSliceResponse> {
         val total = rows.fold(BigDecimal.ZERO) { acc, r -> acc + r.revenue }
         return rows.map { r ->
