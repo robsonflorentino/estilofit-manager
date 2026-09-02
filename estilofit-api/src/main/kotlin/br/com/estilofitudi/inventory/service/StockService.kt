@@ -27,7 +27,7 @@ class StockService(
     fun summary(
         productId: UUID?,
         categoryId: UUID?,
-        size: String,
+        variantSize: String,
         color: String,
         lowStockOnly: Boolean,
         pageable: Pageable,
@@ -36,7 +36,7 @@ class StockService(
         val page = variantRepository.findStockSummary(
             productId = productId,
             categoryId = categoryId,
-            size = size,
+            variantSize = variantSize,
             color = color,
             lowStockThreshold = if (lowStockOnly) threshold else null,
             pageable = pageable,
