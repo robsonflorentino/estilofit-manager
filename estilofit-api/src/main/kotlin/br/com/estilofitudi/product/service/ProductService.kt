@@ -1,6 +1,7 @@
 package br.com.estilofitudi.product.service
 
 import br.com.estilofitudi.category.repository.CategoryRepository
+import br.com.estilofitudi.inventory.service.SettingsReader
 import br.com.estilofitudi.product.domain.Product
 import br.com.estilofitudi.product.dto.*
 import br.com.estilofitudi.product.repository.ProductRepository
@@ -17,6 +18,7 @@ import java.util.*
 class ProductService(
     private val productRepository: ProductRepository,
     private val categoryRepository: CategoryRepository,
+    private val settingsReader: SettingsReader,
 ) {
 
     fun findAll(
@@ -32,7 +34,7 @@ class ProductService(
     fun findById(id: UUID): ProductDetailResponse {
         val product = productRepository.findById(id)
             .orElseThrow { EntityNotFoundException("Produto", id) }
-        return product.toDetailResponse()
+        return product.toDetailResponse(settingsReader.defaultProfitMargin())
     }
 
     @Transactional
@@ -50,7 +52,7 @@ class ProductService(
             description = request.description?.trim(),
             category = category,
         )
-        return productRepository.save(product).toDetailResponse()
+        return productRepository.save(product).toDetailResponse(settingsReader.defaultProfitMargin())
     }
 
     @Transactional
@@ -69,7 +71,7 @@ class ProductService(
         product.description = request.description?.trim()
         product.category = category
 
-        return productRepository.save(product).toDetailResponse()
+        return productRepository.save(product).toDetailResponse(settingsReader.defaultProfitMargin())
     }
 
     @Transactional
@@ -77,6 +79,6 @@ class ProductService(
         val product = productRepository.findById(id)
             .orElseThrow { EntityNotFoundException("Produto", id) }
         product.active = active
-        return productRepository.save(product).toDetailResponse()
+        return productRepository.save(product).toDetailResponse(settingsReader.defaultProfitMargin())
     }
 }

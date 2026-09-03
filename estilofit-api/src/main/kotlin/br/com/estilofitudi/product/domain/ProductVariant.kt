@@ -42,6 +42,11 @@ class ProductVariant(
     @Column(name = "stock_quantity", nullable = false)
     var stockQuantity: Int = 0,
 
+    // Quando true, o salePrice foi definido manualmente e não é sobrescrito
+    // pelo cálculo por margem na entrada de mercadoria (preço por margem vira sugestão).
+    @Column(name = "price_override", nullable = false)
+    var priceOverride: Boolean = false,
+
     @Column(name = "active", nullable = false)
     var active: Boolean = true,
 
