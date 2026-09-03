@@ -21,17 +21,25 @@ class CategoryIntegrationTest @Autowired constructor(
     private fun sellerToken() = authHelper.bearerFor(Role.SELLER)
 
     @Test
-    fun `GET categories retorna as categorias seed sem autenticacao deve falhar`() {
+    fun `GET categories sem autenticacao deve falhar`() {
         mockMvc.perform(get("/categories"))
             .andExpect(status().isUnauthorized)
     }
 
     @Test
-    fun `GET categories autenticado retorna lista com as categorias seed`() {
+    fun `GET categories autenticado lista as categorias cadastradas`() {
+        // A base nasce sem categorias seed (V19); cria uma e confirma que aparece na listagem.
+        val nome = "Categoria Listagem ${System.nanoTime()}"
+        mockMvc.perform(
+            post("/categories").header("Authorization", managerToken())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(mapOf("name" to nome))),
+        ).andExpect(status().isCreated)
+
         mockMvc.perform(get("/categories").header("Authorization", sellerToken()))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$").isArray)
-            .andExpect(jsonPath("$[?(@.name == 'Blusas')]").exists())
+            .andExpect(jsonPath("$[?(@.name == '$nome')]").exists())
     }
 
     @Test
