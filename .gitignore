@@ -29,6 +29,11 @@ dist/
 *.log
 logs/
 
+# ── Backups de banco (gerados por scripts/backup.bat) ─────────────
+backups/
+*.sql
+!estilofit-api/src/main/resources/db/migration/*.sql
+
 # ── Sistema operacional ───────────────────────────────────────────
 .DS_Store
 Thumbs.db
