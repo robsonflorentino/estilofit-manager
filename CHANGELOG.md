@@ -2,6 +2,27 @@
 
 Todas as mudanças relevantes do EstiloFit Manager.
 
+## [1.1.0] — 2026-09-02
+
+Foco em uso local (notebook Windows), robustez do build e operação.
+
+### Adicionado
+- **Base limpa para uso real** — instalação nova nasce apenas com o usuário admin,
+  os canais de venda e as configurações do sistema; categorias/produtos/etc. são
+  cadastrados do zero (migration V19).
+- **Guia de uso local no Windows** (`docs/local-notebook.md`) — passo a passo com
+  Docker Desktop, subir no boot do Windows e acesso na rede local.
+- **Backup do banco no Windows** — `scripts/backup.bat` (dump datado, retenção dos 30
+  mais recentes) e `scripts/README.md` com o agendamento via Agendador de Tarefas.
+- **CI/CD (GitHub Actions)** — workflow de CI (testes backend + build/typecheck frontend)
+  e de Release (publica imagens no GHCR na tag `v*`); ver `docs/ci-cd.md`.
+
+### Corrigido
+- **Build no Windows** — clone com CRLF quebrava o `gradlew` no container
+  (`./gradlew: not found`); normalização no Dockerfile + `.gitattributes` (LF no wrapper).
+- **Memória do build** — limite de heap e Kotlin in-process para evitar OOM no Docker
+  Desktop do Windows.
+
 ## [1.0.0] — 2026-09-02
 
 Primeiro release estável, com o sistema completo e pronto para produção.
