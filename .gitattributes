@@ -1,0 +1,14 @@
+# Garante quebras de linha consistentes ao clonar em qualquer sistema (Windows/Mac/Linux).
+# Sem isto, o Git for Windows (core.autocrlf=true por padrao) converte o gradlew para CRLF,
+# e o build Docker falha com "./gradlew: not found" (o shell do container procura /bin/sh\r).
+
+# Normalizacao padrao: o Git decide texto x binario automaticamente.
+* text=auto
+
+# Scripts shell precisam SEMPRE de LF, mesmo no Windows (rodam em containers Linux).
+*.sh    text eol=lf
+gradlew text eol=lf
+
+# Scripts do Windows sempre CRLF.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
