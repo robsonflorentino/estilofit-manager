@@ -6,7 +6,9 @@ WORKDIR /app
 COPY gradlew ./
 COPY gradle ./gradle
 COPY build.gradle.kts settings.gradle.kts ./
-RUN chmod +x gradlew && ./gradlew --no-daemon dependencies > /dev/null 2>&1 || true
+# Normaliza a quebra de linha do wrapper (evita "./gradlew: not found" quando o
+# arquivo veio com CRLF de um clone no Windows) e torna executável.
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && ./gradlew --no-daemon dependencies > /dev/null 2>&1 || true
 
 # Código-fonte e empacotamento (sem rodar testes — eles exigem Docker/Testcontainers)
 COPY src ./src
