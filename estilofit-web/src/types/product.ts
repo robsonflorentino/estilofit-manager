@@ -12,6 +12,8 @@ export interface Variant {
   salePrice: number | null;
   averageCost: number | null;
   stockQuantity: number;
+  priceOverride: boolean;
+  suggestedPrice: number | null;
   active: boolean;
 }
 
@@ -51,6 +53,7 @@ export interface CreateVariantRequest {
 export interface UpdateVariantRequest {
   profitMargin?: number | null;
   salePrice?: number | null;
+  resetToSuggested?: boolean;
 }
 
 export interface ProductFilters {

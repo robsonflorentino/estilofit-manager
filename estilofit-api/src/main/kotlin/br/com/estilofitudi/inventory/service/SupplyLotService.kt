@@ -117,11 +117,15 @@ class SupplyLotService(
             )
             variant.averageCost = newAvgCost
 
-            // Recalcula preço de venda pela margem (RN-006) — sempre sobrescreve
-            val margin = variant.profitMargin ?: defaultMargin
-            variant.salePrice = newAvgCost
-                .multiply(BigDecimal.ONE.add(margin.divide(BigDecimal(100))))
-                .setScale(2, RoundingMode.HALF_UP)
+            // Recalcula preço de venda pela margem (RN-006), EXCETO quando o preço foi
+            // definido manualmente (priceOverride): nesse caso o preço manual é preservado
+            // e só o custo médio é atualizado. O preço por margem passa a ser sugestão.
+            if (!variant.priceOverride) {
+                val margin = variant.profitMargin ?: defaultMargin
+                variant.salePrice = newAvgCost
+                    .multiply(BigDecimal.ONE.add(margin.divide(BigDecimal(100))))
+                    .setScale(2, RoundingMode.HALF_UP)
+            }
 
             // Estoque (RN-011)
             variant.stockQuantity += itemReq.quantity
