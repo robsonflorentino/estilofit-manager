@@ -133,12 +133,28 @@ Assim, ao ligar e logar: Docker sobe → containers sobem → navegador abre a l
 
 ## Backup dos dados (recomendado)
 
-Os dados ficam no notebook. Faça cópias de vez em quando:
+Os dados ficam no notebook. Vale copiar o banco com frequência.
+
+**Backup na hora:** clique duas vezes em `scripts\backup.bat`. Ele gera um arquivo
+`backups\backup-AAAA-MM-DD_HH-MM.sql` e mantém os 30 backups mais recentes.
+
+**Backup automático (agendado):** dá para o Windows rodar o backup sozinho todo dia
+pelo Agendador de Tarefas. O passo a passo completo está em `scripts\README.md`
+(resumo: Agendador de Tarefas → Criar Tarefa → disparador diário → ação apontando
+para o `scripts\backup.bat`).
+
+> Guarde os arquivos da pasta `backups\` num pen drive ou na nuvem de vez em quando —
+> são eles que salvam os dados se o notebook falhar ou ao migrar para um servidor no futuro.
+
+**Comando manual equivalente** (se preferir digitar):
 ```powershell
 docker exec estilofit_db pg_dump -U estilofit estilofit_manager > backup.sql
 ```
-Guarde o `backup.sql` num pen drive ou na nuvem. Para restaurar num futuro (ex.: ao migrar
-para um servidor), usa-se esse arquivo.
+
+**Restaurar um backup:**
+```powershell
+docker exec -i estilofit_db psql -U estilofit -d estilofit_manager < backups\backup-AAAA-MM-DD_HH-MM.sql
+```
 
 ---
 
