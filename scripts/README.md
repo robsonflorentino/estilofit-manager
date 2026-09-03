@@ -1,5 +1,43 @@
 # Scripts (Windows)
 
+## update.bat — atualizar para a versão mais recente
+Atualiza a aplicação **preservando os dados** já cadastrados. Ele:
+1. Faz um **backup** do banco antes de qualquer coisa (se o backup falhar, cancela).
+2. Baixa a versão mais recente (`git checkout main` + `git pull`).
+3. Reconstrói e sobe os containers com `up -d --build` — **sem apagar o banco**.
+
+- **Rodar:** clique duas vezes em `scripts\update.bat`.
+- **Requisito:** Docker Desktop rodando e conexão com a internet.
+- Após atualizar, aguarde ~1 minuto e acesse `http://localhost` (a API demora alguns
+  segundos para subir; um 502 momentâneo é normal nesse intervalo).
+
+> ⚠️ **NUNCA** rode `docker compose ... down -v` para atualizar. O `-v` apaga o volume do
+> banco e você perde todos os dados. A atualização certa (via `update.bat` ou os comandos
+> abaixo) mantém o volume e apenas aplica as novas migrations no banco existente.
+
+### Atualização manual (equivalente, no PowerShell)
+```powershell
+# 1) backup por seguranca
+.\scripts\backup.bat
+# 2) baixar a nova versao
+git checkout main
+git pull
+# 3) reconstruir preservando os dados (SEM -v)
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+### Se a API não subir após atualizar (502 que não passa)
+Veja o motivo no log da API:
+```powershell
+docker compose -f docker-compose.prod.yml logs api
+```
+- `password authentication failed`: o `.env.prod` foi alterado (senha do banco) depois que
+  o volume já existia. **Não apague o volume** se há dados reais — restaure o `.env.prod`
+  para a senha original com que o banco foi criado.
+- Erro de migration (`Migration ... failed`): não apague nada; guarde o log e peça suporte.
+
+---
+
 ## backup.bat
 Gera um dump do banco em `backups\backup-AAAA-MM-DD_HH-MM.sql` e mantém os 30 backups
 mais recentes (apaga os mais antigos automaticamente).
