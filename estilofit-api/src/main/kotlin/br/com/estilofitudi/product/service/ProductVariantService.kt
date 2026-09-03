@@ -5,6 +5,7 @@ import br.com.estilofitudi.product.dto.CreateVariantRequest
 import br.com.estilofitudi.product.dto.UpdateVariantRequest
 import br.com.estilofitudi.product.dto.VariantResponse
 import br.com.estilofitudi.product.dto.toResponse
+import br.com.estilofitudi.inventory.service.SettingsReader
 import br.com.estilofitudi.product.repository.ProductRepository
 import br.com.estilofitudi.product.repository.ProductVariantRepository
 import br.com.estilofitudi.shared.exception.BusinessException
@@ -22,7 +23,12 @@ class ProductVariantService(
     private val productRepository: ProductRepository,
     private val variantRepository: ProductVariantRepository,
     private val skuGenerator: SkuGenerator,
+    private val settingsReader: SettingsReader,
 ) {
+
+    /** Margem efetiva da variação: a própria, ou a global quando não definida. */
+    private fun effectiveMargin(variant: ProductVariant): BigDecimal =
+        variant.profitMargin ?: settingsReader.defaultProfitMargin()
 
     @Transactional
     fun create(productId: UUID, request: CreateVariantRequest): VariantResponse {
@@ -54,7 +60,8 @@ class ProductVariantService(
             averageCost = null,
             stockQuantity = 0,
         )
-        return variantRepository.save(variant).toResponse()
+        val saved = variantRepository.save(variant)
+        return saved.toResponse(effectiveMargin(saved))
     }
 
     @Transactional
@@ -63,25 +70,36 @@ class ProductVariantService(
 
         // SKU imutável (decisão 5): size/color NÃO são alterados aqui.
         request.profitMargin?.let { variant.profitMargin = it }
-        request.salePrice?.let { variant.salePrice = it }
 
-        // Se veio novo preço manual e há custo, recalcula a margem efetiva para transparência
-        val cost = variant.averageCost
-        if (request.salePrice != null && cost != null && cost > BigDecimal.ZERO) {
-            variant.profitMargin = request.salePrice.subtract(cost)
-                .divide(cost, 4, RoundingMode.HALF_UP)
-                .multiply(BigDecimal(100))
-                .setScale(2, RoundingMode.HALF_UP)
+        if (request.resetToSuggested) {
+            // Volta ao modo automático: preço segue a margem novamente.
+            variant.priceOverride = false
+            val cost = variant.averageCost
+            if (cost != null) {
+                variant.salePrice = cost
+                    .multiply(BigDecimal.ONE.add(effectiveMargin(variant).divide(BigDecimal(100))))
+                    .setScale(2, RoundingMode.HALF_UP)
+            }
+        } else if (request.salePrice != null) {
+            // Preço manual: passa a valer independentemente da margem, inclusive na
+            // entrada de mercadoria (que não sobrescreve mais o preço).
+            // NÃO alteramos profitMargin aqui: ela guarda a margem "desejada" da variação
+            // (usada como sugestão e no "voltar ao sugerido"). A margem efetiva do preço
+            // praticado é derivável no cliente a partir de salePrice e averageCost.
+            variant.salePrice = request.salePrice
+            variant.priceOverride = true
         }
 
-        return variantRepository.save(variant).toResponse()
+        val saved = variantRepository.save(variant)
+        return saved.toResponse(effectiveMargin(saved))
     }
 
     @Transactional
     fun updateStatus(productId: UUID, variantId: UUID, active: Boolean): VariantResponse {
         val variant = findVariantOfProduct(productId, variantId)
         variant.active = active
-        return variantRepository.save(variant).toResponse()
+        val saved = variantRepository.save(variant)
+        return saved.toResponse(effectiveMargin(saved))
     }
 
     private fun findVariantOfProduct(productId: UUID, variantId: UUID): ProductVariant {

@@ -178,6 +178,94 @@ class InventoryIntegrationTest @Autowired constructor(
         org.junit.jupiter.api.Assertions.assertTrue(found, "a variação criada deveria aparecer no resumo")
     }
 
+    /** Cria categoria + produto + variação e retorna (prodId, variantId). */
+    private fun setupProductAndVariant(token: String, suffix: String): Pair<String, String> {
+        val catId = postId("/categories", token, """{"name":"Cat $suffix"}""")
+        val prodId = postId("/products", token, """{"name":"Prod $suffix","categoryId":"$catId"}""")
+        val varJson = mockMvc.perform(
+            post("/products/$prodId/variants").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON).content("""{"size":"M","color":"Azul"}"""),
+        ).andExpect(status().isCreated).andReturn().response.contentAsString
+        return prodId to objectMapper.readTree(varJson)["id"].asText()
+    }
+
+    @Test
+    fun `preco manual NAO e sobrescrito pela entrada de mercadoria (custo atualiza, preco fica)`() {
+        val token = managerToken()
+        val s = System.nanoTime().toString()
+        val (prodId, variantId) = setupProductAndVariant(token, s)
+        val supplierId = createSupplier(token, s)
+
+        // 1) Define preço de venda MANUAL de R$ 150 (acima do que a margem sugeriria)
+        mockMvc.perform(
+            put("/products/$prodId/variants/$variantId").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON).content("""{"salePrice":150.00}"""),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.priceOverride").value(true))
+            .andExpect(jsonPath("$.salePrice").value(150.00))
+
+        // 2) Registra entrada de mercadoria: 10 un x custo 30 (margem sugeriria ~60)
+        val body = objectMapper.writeValueAsString(
+            mapOf(
+                "supplierId" to supplierId,
+                "receivedAt" to LocalDate.now().toString(),
+                "freightCost" to 0.00,
+                "items" to listOf(mapOf("variantId" to variantId, "quantity" to 10, "unitCost" to 30.00)),
+            ),
+        )
+        mockMvc.perform(
+            post("/supply-lots").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON).content(body),
+        ).andExpect(status().isCreated)
+
+        // 3) Confere: custo médio atualizou para 30, mas o preço MANUAL de 150 permaneceu
+        val stockJson = mockMvc.perform(
+            get("/stock/summary").header("Authorization", token).param("size", "M"),
+        ).andExpect(status().isOk).andReturn().response.contentAsString
+        val item = objectMapper.readTree(stockJson)["content"].first { it["variantId"].asText() == variantId }
+        org.junit.jupiter.api.Assertions.assertEquals(30.0, item["averageCost"].asDouble())
+        org.junit.jupiter.api.Assertions.assertEquals(150.0, item["salePrice"].asDouble())
+    }
+
+    @Test
+    fun `voltar ao sugerido recalcula preco pela margem apos entrada`() {
+        val token = managerToken()
+        val s = System.nanoTime().toString()
+        val (prodId, variantId) = setupProductAndVariant(token, s)
+        val supplierId = createSupplier(token, s)
+
+        // entrada: custo 30 -> preço automático 60 (margem global 100%)
+        mockMvc.perform(
+            post("/supply-lots").header("Authorization", token).contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        mapOf(
+                            "supplierId" to supplierId,
+                            "receivedAt" to LocalDate.now().toString(),
+                            "freightCost" to 0.00,
+                            "items" to listOf(mapOf("variantId" to variantId, "quantity" to 10, "unitCost" to 30.00)),
+                        ),
+                    ),
+                ),
+        ).andExpect(status().isCreated)
+
+        // define preço manual 150
+        mockMvc.perform(
+            put("/products/$prodId/variants/$variantId").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON).content("""{"salePrice":150.00}"""),
+        ).andExpect(status().isOk).andExpect(jsonPath("$.priceOverride").value(true))
+
+        // volta ao sugerido -> preço recalculado pela margem sobre custo 30 = 60
+        mockMvc.perform(
+            put("/products/$prodId/variants/$variantId").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON).content("""{"resetToSuggested":true}"""),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.priceOverride").value(false))
+            .andExpect(jsonPath("$.salePrice").value(60.00))
+    }
+
     @Test
     fun `registrar lote sem token retorna 401`() {
         mockMvc.perform(get("/supply-lots")).andExpect(status().isUnauthorized)

@@ -2,6 +2,15 @@
 
 Todas as mudanças relevantes do EstiloFit Manager.
 
+## [1.2.0] — 2026-09-02
+
+### Adicionado
+- **Preço de venda manual por variação** — o preço pela margem passa a ser uma sugestão.
+  É possível fixar um preço acima ou abaixo do sugerido; a entrada de mercadoria continua
+  atualizando o custo médio, mas não altera o preço manual. Botão "voltar ao sugerido"
+  recalcula pela margem. Preço abaixo do custo é permitido (aviso visual, sem bloqueio).
+  Não afeta venda/lucro/comissão (já usam o preço gravado). Ver `docs/features/022-manual-sale-price.md`.
+
 ## [1.1.0] — 2026-09-02
 
 Foco em uso local (notebook Windows), robustez do build e operação.

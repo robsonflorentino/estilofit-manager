@@ -6,6 +6,7 @@ import br.com.estilofitudi.product.domain.Product
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
+import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
 
@@ -47,13 +48,17 @@ fun Product.toSummaryResponse() = ProductSummaryResponse(
     createdAt = createdAt,
 )
 
-fun Product.toDetailResponse() = ProductDetailResponse(
+/**
+ * @param defaultMargin margem global usada para o preço sugerido das variações que não
+ *        têm margem própria. Se null, o preço sugerido não é calculado.
+ */
+fun Product.toDetailResponse(defaultMargin: BigDecimal? = null) = ProductDetailResponse(
     id = id,
     name = name,
     description = description,
     category = category.toResponse(),
     active = active,
-    variants = variants.map { it.toResponse() },
+    variants = variants.map { it.toResponse(it.profitMargin ?: defaultMargin) },
     createdAt = createdAt,
     updatedAt = updatedAt,
 )
