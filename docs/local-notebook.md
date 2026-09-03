@@ -90,8 +90,44 @@ docker compose -f docker-compose.prod.yml down
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 
-O Docker Desktop também pode ligar sozinho ao iniciar o Windows (Settings → General →
-"Start Docker Desktop when you sign in"), deixando a aplicação disponível automaticamente.
+---
+
+## Subir a aplicação automaticamente no boot do Windows
+
+A stack já está configurada com `restart: unless-stopped` nos três containers
+(postgres, api, web). Ou seja: **assim que o Docker Desktop liga, os containers voltam
+sozinhos** — desde que da última vez você tenha usado `up -d` (e não `down`/`stop`).
+
+Falta só garantir que o **Docker Desktop** inicie junto com o Windows.
+
+### 1. Fazer o Docker Desktop iniciar ao ligar o notebook
+1. Abra o **Docker Desktop**.
+2. Vá em **Settings** (engrenagem) → **General**.
+3. Marque **"Start Docker Desktop when you sign in"**.
+4. (Recomendado) Marque também **"Open Docker Dashboard at startup"** desmarcado,
+   para não abrir a janela do Docker toda vez.
+5. Clique em **Apply & restart**.
+
+Pronto. Toda vez que ela ligar o notebook e fizer login no Windows, o Docker sobe e,
+logo em seguida, a aplicação sobe sozinha. Basta abrir `http://localhost` no navegador.
+
+> Observação: o Docker Desktop só inicia **após o login** no Windows. Se o notebook
+> ligar e parar na tela de login, a aplicação só sobe quando ela entrar na conta.
+> Para o uso no dia a dia da loja isso costuma ser suficiente.
+
+### 2. (Opcional) Abrir a loja no navegador automaticamente
+Para o navegador já abrir a tela de login ao ligar:
+1. Pressione **Win + R**, digite `shell:startup` e Enter (abre a pasta de Inicialização).
+2. Crie um atalho nessa pasta apontando para:
+   ```
+   http://localhost
+   ```
+   (Botão direito → Novo → Atalho → cole `http://localhost` → Avançar → Concluir.)
+
+Assim, ao ligar e logar: Docker sobe → containers sobem → navegador abre a loja.
+
+> Dica: dê ~1 minuto após o login antes de esperar a tela carregar na primeira vez do dia,
+> pois a API leva alguns segundos para ficar pronta.
 
 ---
 
