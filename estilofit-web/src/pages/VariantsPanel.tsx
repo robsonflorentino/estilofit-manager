@@ -102,7 +102,7 @@ export function VariantsPanel({ product, onClose }: VariantsPanelProps) {
     n == null ? "—" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
-    <Modal open title={`Variações · ${product.name}`} onClose={onClose}>
+    <Modal open size="3xl" title={`Variações · ${product.name}`} onClose={onClose}>
       {isLoading ? (
         <div className="py-8 text-center">
           <Loader2 className="mx-auto h-6 w-6 animate-spin text-brand-purple" />
@@ -111,8 +111,8 @@ export function VariantsPanel({ product, onClose }: VariantsPanelProps) {
         <div className="space-y-4">
           {/* Lista de variações */}
           {detail && detail.variants.length > 0 ? (
-            <div className="overflow-hidden rounded-card border border-border">
-              <table className="w-full text-left text-sm">
+            <div className="overflow-x-auto rounded-card border border-border">
+              <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="bg-bg-surface-raised text-xs uppercase tracking-wider text-content-secondary">
                   <tr>
                     <th className="px-3 py-2">SKU</th>
@@ -154,21 +154,23 @@ export function VariantsPanel({ product, onClose }: VariantsPanelProps) {
                       <td className="px-3 py-2">
                         {v.active ? <Badge variant="success">Ativa</Badge> : <Badge variant="danger">Inativa</Badge>}
                       </td>
-                      <td className="px-3 py-2 text-right">
-                        <button
-                          onClick={() => openPriceEditor(v)}
-                          className="rounded-btn p-1.5 text-content-secondary hover:bg-bg-surface-raised hover:text-brand-purple"
-                          title="Editar preço de venda"
-                        >
-                          <Tag className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => statusMutation.mutate(v)}
-                          className="rounded-btn p-1.5 text-content-secondary hover:bg-bg-surface-raised hover:text-content-primary"
-                          title={v.active ? "Desativar" : "Ativar"}
-                        >
-                          <Power className="h-4 w-4" />
-                        </button>
+                      <td className="whitespace-nowrap px-3 py-2 text-right">
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openPriceEditor(v)}
+                            className="rounded-btn p-1.5 text-content-secondary hover:bg-bg-surface-raised hover:text-brand-purple"
+                            title="Editar preço de venda"
+                          >
+                            <Tag className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => statusMutation.mutate(v)}
+                            className="rounded-btn p-1.5 text-content-secondary hover:bg-bg-surface-raised hover:text-content-primary"
+                            title={v.active ? "Desativar" : "Ativar"}
+                          >
+                            <Power className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

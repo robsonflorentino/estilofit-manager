@@ -1,15 +1,26 @@
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
 
+type ModalSize = "md" | "lg" | "xl" | "2xl" | "3xl";
+
+const SIZE_CLASSES: Record<ModalSize, string> = {
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+  "2xl": "max-w-2xl",
+  "3xl": "max-w-3xl",
+};
+
 interface ModalProps {
   open: boolean;
   title: string;
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  size?: ModalSize;
 }
 
-export function Modal({ open, title, onClose, children, footer }: ModalProps) {
+export function Modal({ open, title, onClose, children, footer, size = "lg" }: ModalProps) {
   if (!open) return null;
 
   return (
@@ -18,7 +29,7 @@ export function Modal({ open, title, onClose, children, footer }: ModalProps) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-modal border border-border bg-bg-surface-raised shadow-modal"
+        className={`w-full ${SIZE_CLASSES[size]} rounded-modal border border-border bg-bg-surface-raised shadow-modal`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

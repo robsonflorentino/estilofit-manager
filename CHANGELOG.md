@@ -2,6 +2,17 @@
 
 Todas as mudanças relevantes do EstiloFit Manager.
 
+## [1.2.1] — 2026-09-03
+
+### Corrigido
+- **Preço manual inacessível na tela de Variações** — o modal era estreito e cortava a
+  coluna de ações, escondendo o botão de editar preço. O modal ficou mais largo e a tabela
+  passou a rolar horizontalmente, deixando o botão sempre visível em cada variação.
+
+### Adicionado
+- **Script de atualização no Windows** (`scripts/update.bat`) — atualiza preservando os
+  dados (backup + git pull + rebuild, sem apagar o volume). Ver `scripts/README.md`.
+
 ## [1.2.0] — 2026-09-02
 
 ### Adicionado
