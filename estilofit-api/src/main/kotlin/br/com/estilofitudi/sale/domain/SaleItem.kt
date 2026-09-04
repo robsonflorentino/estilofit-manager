@@ -25,6 +25,11 @@ class SaleItem(
 
     @Column(name = "total_price", nullable = false, precision = 10, scale = 2)
     var totalPrice: BigDecimal,
+
+    // Custo médio da variação congelado no momento da venda. O lucro histórico usa
+    // este valor (não o custo atual), para que correções de custo não afetem vendas passadas.
+    @Column(name = "unit_cost", nullable = false, precision = 10, scale = 2)
+    var unitCost: BigDecimal = BigDecimal.ZERO,
 ) {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

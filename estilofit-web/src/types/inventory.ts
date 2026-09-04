@@ -81,3 +81,9 @@ export interface StockAdjustmentRequest {
   quantity: number;
   notes: string;
 }
+
+export interface CorrectCostRequest {
+  variantId: string;
+  averageCost: number;
+  notes: string;
+}

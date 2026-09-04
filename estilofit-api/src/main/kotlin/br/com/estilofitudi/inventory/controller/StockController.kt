@@ -1,6 +1,7 @@
 package br.com.estilofitudi.inventory.controller
 
 import br.com.estilofitudi.inventory.domain.StockMovementType
+import br.com.estilofitudi.inventory.dto.CorrectCostRequest
 import br.com.estilofitudi.inventory.dto.StockAdjustmentRequest
 import br.com.estilofitudi.inventory.dto.StockMovementResponse
 import br.com.estilofitudi.inventory.dto.StockSummaryItem
@@ -60,4 +61,16 @@ class StockController(private val stockService: StockService) {
         authentication: Authentication,
     ): ResponseEntity<StockMovementResponse> =
         ResponseEntity.status(HttpStatus.CREATED).body(stockService.adjust(request, authentication.name))
+
+    @PostMapping("/cost-corrections")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    @Operation(
+        summary = "Corrigir custo médio da variação",
+        description = "🟡 Admin + Gestor — corrige o custo (não afeta vendas já feitas). Justificativa obrigatória",
+    )
+    fun correctCost(
+        @Valid @RequestBody request: CorrectCostRequest,
+        authentication: Authentication,
+    ): ResponseEntity<StockMovementResponse> =
+        ResponseEntity.status(HttpStatus.CREATED).body(stockService.correctCost(request, authentication.name))
 }

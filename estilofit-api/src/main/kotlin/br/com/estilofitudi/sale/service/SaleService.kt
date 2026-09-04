@@ -81,7 +81,12 @@ class SaleService(
             .orElseThrow { EntityNotFoundException("Usuário", userEmail) }
 
         // Carrega variações, valida preço e estoque (RN-018/020, decisões 2/3/5)
-        data class ResolvedItem(val variant: ProductVariant, val quantity: Int, val unitPrice: BigDecimal)
+        data class ResolvedItem(
+            val variant: ProductVariant,
+            val quantity: Int,
+            val unitPrice: BigDecimal,
+            val unitCost: BigDecimal,
+        )
         val resolved = request.items.map { item ->
             val variant = variantRepository.findById(item.variantId)
                 .orElseThrow { EntityNotFoundException("Variação", item.variantId) }
@@ -96,7 +101,9 @@ class SaleService(
                         "Disponível: ${variant.stockQuantity}, solicitado: ${item.quantity}.",
                 )
             }
-            ResolvedItem(variant, item.quantity, price)
+            // Congela o custo do momento da venda (RN-023). Correções futuras de custo
+            // não afetam o lucro desta venda.
+            ResolvedItem(variant, item.quantity, price, variant.averageCost ?: BigDecimal.ZERO)
         }
 
         // Totais
@@ -165,6 +172,7 @@ class SaleService(
                     quantity = r.quantity,
                     unitPrice = r.unitPrice,
                     totalPrice = r.unitPrice.multiply(BigDecimal(r.quantity)),
+                    unitCost = r.unitCost,
                 )
             )
             stockService.registerSaleExit(r.variant, r.quantity, sale.id, seller)

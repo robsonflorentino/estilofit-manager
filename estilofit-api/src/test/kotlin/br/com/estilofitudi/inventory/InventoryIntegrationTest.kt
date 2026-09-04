@@ -267,6 +267,64 @@ class InventoryIntegrationTest @Autowired constructor(
     }
 
     @Test
+    fun `correcao de custo altera o averageCost da variacao`() {
+        val token = managerToken()
+        val s = System.nanoTime().toString()
+        val (prodId, variantId) = setupProductAndVariant(token, s)
+        val supplierId = createSupplier(token, s)
+
+        // entrada define custo 30
+        mockMvc.perform(
+            post("/supply-lots").header("Authorization", token).contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        mapOf(
+                            "supplierId" to supplierId,
+                            "receivedAt" to LocalDate.now().toString(),
+                            "freightCost" to 0.00,
+                            "items" to listOf(mapOf("variantId" to variantId, "quantity" to 5, "unitCost" to 30.00)),
+                        ),
+                    ),
+                ),
+        ).andExpect(status().isCreated)
+
+        // corrige custo para 42,50
+        mockMvc.perform(
+            post("/stock/cost-corrections").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"variantId":"$variantId","averageCost":42.50,"notes":"ajuste de custo errado"}"""),
+        ).andExpect(status().isCreated)
+
+        // confere no detalhe do produto
+        val json = mockMvc.perform(get("/products/$prodId").header("Authorization", token))
+            .andExpect(status().isOk).andReturn().response.contentAsString
+        val v = objectMapper.readTree(json)["variants"].first { it["id"].asText() == variantId }
+        org.junit.jupiter.api.Assertions.assertEquals(42.5, v["averageCost"].asDouble())
+    }
+
+    @Test
+    fun `correcao de custo sem justificativa retorna 400`() {
+        val token = managerToken()
+        val s = System.nanoTime().toString()
+        val (_, variantId) = setupProductAndVariant(token, s)
+        mockMvc.perform(
+            post("/stock/cost-corrections").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"variantId":"$variantId","averageCost":42.50,"notes":""}"""),
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `vendedor nao pode corrigir custo`() {
+        val stoken = sellerToken()
+        mockMvc.perform(
+            post("/stock/cost-corrections").header("Authorization", stoken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"variantId":"00000000-0000-0000-0000-000000000000","averageCost":10.00,"notes":"tentativa"}"""),
+        ).andExpect(status().isForbidden)
+    }
+
+    @Test
     fun `registrar lote sem token retorna 401`() {
         mockMvc.perform(get("/supply-lots")).andExpect(status().isUnauthorized)
     }

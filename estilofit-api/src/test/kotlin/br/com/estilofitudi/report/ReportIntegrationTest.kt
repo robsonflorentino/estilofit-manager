@@ -99,6 +99,44 @@ class ReportIntegrationTest @Autowired constructor(
     }
 
     @Test
+    fun `corrigir o custo NAO muda o lucro de vendas ja feitas e nova venda usa o custo novo`() {
+        val token = managerToken()
+        val s = System.nanoTime().toString()
+        val variantId = setupVariant(token, s)
+        stockUp(token, variantId, s, qty = 100, unitCost = 50.0) // averageCost 50, salePrice 100
+        val channelId = firstChannelId(token)
+
+        val profit0 = get("/reports/summary", token)["estimatedProfit"].decimalValue()
+
+        // Venda 1: 2un -> faturamento 200, custo congelado 2x50=100, lucro 100
+        createSale(token, channelId, variantId, 2)
+        val profit1 = get("/reports/summary", token)["estimatedProfit"].decimalValue()
+        assertEquals(0, BigDecimal("100.00").compareTo(profit1.subtract(profit0)), "lucro da venda 1 deve ser 100")
+
+        // Corrige o custo da variação (erro de cadastro): 50 -> 80
+        mockMvc.perform(
+            post("/stock/cost-corrections").header("Authorization", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"variantId":"$variantId","averageCost":80.00,"notes":"custo cadastrado errado"}"""),
+        ).andExpect(status().isCreated)
+
+        // O lucro da venda 1 NÃO pode mudar (custo dela foi congelado em 50)
+        val profitAfterCorrection = get("/reports/summary", token)["estimatedProfit"].decimalValue()
+        assertEquals(
+            0, profit1.compareTo(profitAfterCorrection),
+            "corrigir o custo nao pode alterar o lucro de vendas ja feitas",
+        )
+
+        // Venda 2 (agora com custo 80): faturamento 100, custo 80, lucro 20
+        createSale(token, channelId, variantId, 1)
+        val profitAfterSale2 = get("/reports/summary", token)["estimatedProfit"].decimalValue()
+        assertEquals(
+            0, BigDecimal("20.00").compareTo(profitAfterSale2.subtract(profitAfterCorrection)),
+            "a nova venda deve usar o custo corrigido (80): lucro 100-80=20",
+        )
+    }
+
+    @Test
     fun `resumo do periodo traz faturamento, ticket medio e lucro coerentes`() {
         val token = managerToken()
         val s = System.nanoTime().toString()

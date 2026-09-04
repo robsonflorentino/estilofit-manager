@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { Package, PackagePlus, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Package, PackagePlus, SlidersHorizontal, Loader2, Coins } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { DataTable, type Column } from "../components/DataTable";
 import { Badge } from "../components/Badge";
@@ -27,6 +27,15 @@ const adjustSchema = z.object({
   notes: z.string().min(5, "Justificativa é obrigatória (mínimo 5 caracteres)"),
 });
 type AdjustForm = z.infer<typeof adjustSchema>;
+
+const costSchema = z.object({
+  averageCost: z
+    .string()
+    .min(1, "Custo é obrigatório")
+    .refine((v) => !Number.isNaN(Number(v)) && Number(v) >= 0, "Custo não pode ser negativo"),
+  notes: z.string().min(5, "Justificativa é obrigatória (mínimo 5 caracteres)"),
+});
+type CostForm = z.infer<typeof costSchema>;
 
 const money = (n: number | null | undefined) =>
   n == null ? "—" : n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -76,6 +85,31 @@ export function StockPage() {
     setAdjusting(item);
   };
 
+  // ── Correção de custo médio ──────────────────────────────────────────
+  const [correcting, setCorrecting] = useState<StockSummaryItem | null>(null);
+  const costForm = useForm<CostForm>({ resolver: zodResolver(costSchema) });
+
+  const costMutation = useMutation({
+    mutationFn: (form: CostForm) =>
+      inventoryService.correctCost({
+        variantId: correcting!.variantId,
+        averageCost: Number(form.averageCost),
+        notes: form.notes,
+      }),
+    onSuccess: () => {
+      toast.success("Custo corrigido. Vendas já realizadas não foram afetadas.");
+      setCorrecting(null);
+      costForm.reset();
+      queryClient.invalidateQueries({ queryKey: ["stock"] });
+    },
+    onError: (e) => toast.error(getApiErrorMessage(e, "Não foi possível corrigir o custo.")),
+  });
+
+  const openCorrectCost = (item: StockSummaryItem) => {
+    costForm.reset({ averageCost: item.averageCost != null ? String(item.averageCost) : "", notes: "" });
+    setCorrecting(item);
+  };
+
   const columns: Column<StockSummaryItem>[] = [
     { header: "SKU", render: (i) => <span className="font-mono text-xs text-brand-purple">{i.sku}</span> },
     { header: "Produto", render: (i) => <span className="font-medium">{i.productName}</span> },
@@ -98,9 +132,14 @@ export function StockPage() {
       className: "text-right",
       render: (i) => (
         <RoleGuard roles={["ADMIN", "MANAGER"]}>
-          <button onClick={() => openAdjust(i)} className="rounded-btn p-2 text-content-secondary hover:bg-bg-surface-raised hover:text-brand-purple" title="Ajustar estoque">
-            <SlidersHorizontal className="h-4 w-4" />
-          </button>
+          <div className="inline-flex items-center justify-end gap-1">
+            <button onClick={() => openCorrectCost(i)} className="rounded-btn p-2 text-content-secondary hover:bg-bg-surface-raised hover:text-brand-purple" title="Corrigir custo médio">
+              <Coins className="h-4 w-4" />
+            </button>
+            <button onClick={() => openAdjust(i)} className="rounded-btn p-2 text-content-secondary hover:bg-bg-surface-raised hover:text-brand-purple" title="Ajustar estoque">
+              <SlidersHorizontal className="h-4 w-4" />
+            </button>
+          </div>
         </RoleGuard>
       ),
     },
@@ -185,6 +224,43 @@ export function StockPage() {
             <textarea className="input-base min-h-16" placeholder="Ex: peças danificadas no inventário" {...register("notes")} />
             {errors.notes && <p className="mt-1 text-xs text-state-danger">{errors.notes.message}</p>}
           </div>
+        </form>
+      </Modal>
+
+      {/* Modal de correção de custo médio */}
+      <Modal
+        open={correcting !== null}
+        title={`Corrigir custo · ${correcting?.sku ?? ""}`}
+        onClose={() => setCorrecting(null)}
+        footer={
+          <>
+            <button className="btn-secondary" onClick={() => setCorrecting(null)} disabled={costMutation.isPending}>Cancelar</button>
+            <button className="btn-primary" onClick={costForm.handleSubmit((f) => costMutation.mutate(f))} disabled={costMutation.isPending}>
+              {costMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar custo"}
+            </button>
+          </>
+        }
+      >
+        <div className="mb-3 text-sm text-content-secondary">
+          Custo médio atual: <span className="text-content-primary">{money(correcting?.averageCost)}</span>
+        </div>
+        <form className="space-y-4" onSubmit={costForm.handleSubmit((f) => costMutation.mutate(f))} noValidate>
+          <div>
+            <label className="mb-1.5 block text-sm text-content-secondary">
+              Novo custo médio <span className="text-brand-purple">*</span>
+            </label>
+            <input type="number" step="0.01" min="0" className="input-base" autoFocus placeholder="Ex: 42,50" {...costForm.register("averageCost")} />
+            {costForm.formState.errors.averageCost && <p className="mt-1 text-xs text-state-danger">{costForm.formState.errors.averageCost.message}</p>}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm text-content-secondary">Justificativa <span className="text-brand-purple">*</span></label>
+            <textarea className="input-base min-h-16" placeholder="Ex: custo digitado errado na entrada" {...costForm.register("notes")} />
+            {costForm.formState.errors.notes && <p className="mt-1 text-xs text-state-danger">{costForm.formState.errors.notes.message}</p>}
+          </div>
+          <p className="text-xs text-content-muted">
+            Corrige o custo desta variação. Não altera o lucro de vendas já realizadas nem a
+            quantidade em estoque. Vale para novas vendas e para o valor de estoque atual.
+          </p>
         </form>
       </Modal>
     </div>
