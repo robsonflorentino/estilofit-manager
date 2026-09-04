@@ -4,6 +4,7 @@ import br.com.estilofitudi.inventory.domain.StockMovement
 import br.com.estilofitudi.inventory.domain.StockMovementType
 import br.com.estilofitudi.product.domain.ProductVariant
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.PositiveOrZero
 import jakarta.validation.constraints.Size
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -84,6 +85,21 @@ data class StockAdjustmentRequest(
 
     @field:NotNull(message = "Quantidade é obrigatória")
     val quantity: Int, // positivo = entrada, negativo = saída
+
+    @field:Size(min = 5, message = "Justificativa é obrigatória (mínimo 5 caracteres)")
+    val notes: String,
+)
+
+// ── Correção de custo médio ──────────────────────────────────────────────────
+
+data class CorrectCostRequest(
+    @field:NotNull(message = "Variação é obrigatória")
+    val variantId: UUID,
+
+    // Novo custo médio. Aceita >= 0 (0 permitido, ex.: brinde/consignação).
+    @field:NotNull(message = "Custo é obrigatório")
+    @field:PositiveOrZero(message = "Custo não pode ser negativo")
+    val averageCost: BigDecimal,
 
     @field:Size(min = 5, message = "Justificativa é obrigatória (mínimo 5 caracteres)")
     val notes: String,

@@ -1,6 +1,7 @@
 import { api } from "../lib/api";
 import type { PageResponse } from "../types/api";
 import type {
+  CorrectCostRequest,
   CreateSupplyLotRequest,
   StockAdjustmentRequest,
   StockMovement,
@@ -54,6 +55,11 @@ export const inventoryService = {
 
   async adjust(request: StockAdjustmentRequest): Promise<StockMovement> {
     const { data } = await api.post<StockMovement>("/stock/adjustments", request);
+    return data;
+  },
+
+  async correctCost(request: CorrectCostRequest): Promise<StockMovement> {
+    const { data } = await api.post<StockMovement>("/stock/cost-corrections", request);
     return data;
   },
 };
