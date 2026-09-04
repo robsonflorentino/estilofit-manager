@@ -57,6 +57,41 @@ class StockService(
         return PageResponse.from(page.map { it.toResponse() })
     }
 
+    /**
+     * Corrige o custo médio de uma variação (ex.: cadastrado errado na entrada).
+     * NÃO afeta o lucro de vendas já realizadas (o custo delas está congelado no SaleItem)
+     * nem a quantidade em estoque. Registra a alteração como movimentação para auditoria.
+     * O preço de venda NÃO é recalculado aqui; se a variação estiver em modo automático,
+     * o próximo lote recalcula o preço com o novo custo.
+     */
+    @Transactional
+    fun correctCost(request: CorrectCostRequest, userEmail: String): StockMovementResponse {
+        val variant = variantRepository.findById(request.variantId)
+            .orElseThrow { EntityNotFoundException("Variação", request.variantId) }
+
+        val user = userRepository.findByEmail(userEmail)
+            .orElseThrow { EntityNotFoundException("Usuário", userEmail) }
+
+        val previous = variant.averageCost
+        val novo = request.averageCost.setScale(2, java.math.RoundingMode.HALF_UP)
+
+        variant.averageCost = novo
+        variantRepository.save(variant)
+
+        val fmt = { v: java.math.BigDecimal? -> v?.toPlainString() ?: "—" }
+        val movement = stockMovementRepository.save(
+            StockMovement(
+                variant = variant,
+                type = StockMovementType.ADJUSTMENT,
+                quantity = 0, // correção de custo não altera quantidade
+                referenceType = "COST_CORRECTION",
+                notes = "Correção de custo: ${fmt(previous)} -> ${fmt(novo)}. ${request.notes.trim()}",
+                user = user,
+            )
+        )
+        return movement.toResponse()
+    }
+
     @Transactional
     fun adjust(request: StockAdjustmentRequest, userEmail: String): StockMovementResponse {
         if (request.quantity == 0) {

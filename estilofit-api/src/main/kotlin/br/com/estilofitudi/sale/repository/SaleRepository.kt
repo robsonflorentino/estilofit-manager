@@ -50,7 +50,7 @@ interface SaleRepository : JpaRepository<Sale, UUID> {
         SELECT COALESCE(SUM(s.finalAmount), 0) AS revenue,
                COUNT(s)                        AS saleCount,
                COALESCE(SUM(
-                   (SELECT COALESCE(SUM(i.quantity * COALESCE(i.variant.averageCost, 0)), 0)
+                   (SELECT COALESCE(SUM(i.quantity * COALESCE(i.unitCost, 0)), 0)
                     FROM SaleItem i WHERE i.sale = s)
                ), 0)                           AS cost,
                COALESCE(SUM(s.commissionAmount), 0) AS commission
@@ -125,7 +125,7 @@ interface SaleRepository : JpaRepository<Sale, UUID> {
                EXTRACT(MONTH FROM s.confirmedAt) AS month,
                COALESCE(SUM(s.finalAmount), 0) AS revenue,
                COALESCE(SUM(
-                   (SELECT COALESCE(SUM(i.quantity * COALESCE(i.variant.averageCost, 0)), 0)
+                   (SELECT COALESCE(SUM(i.quantity * COALESCE(i.unitCost, 0)), 0)
                     FROM SaleItem i WHERE i.sale = s)
                ), 0) AS cost,
                COALESCE(SUM(s.commissionAmount), 0) AS commission
@@ -148,7 +148,7 @@ interface SaleRepository : JpaRepository<Sale, UUID> {
         SELECT s.channel.name AS label,
                COALESCE(SUM(s.finalAmount), 0) AS revenue,
                COALESCE(SUM(
-                   (SELECT COALESCE(SUM(i.quantity * COALESCE(i.variant.averageCost, 0)), 0)
+                   (SELECT COALESCE(SUM(i.quantity * COALESCE(i.unitCost, 0)), 0)
                     FROM SaleItem i WHERE i.sale = s)
                ), 0) + COALESCE(SUM(s.commissionAmount), 0) AS cost,
                COUNT(s) AS saleCount
