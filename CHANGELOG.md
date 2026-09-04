@@ -2,6 +2,20 @@
 
 Todas as mudanças relevantes do EstiloFit Manager.
 
+## [1.3.0] — 2026-09-03
+
+### Adicionado
+- **Correção de custo da variação** — na tela de Estoque é possível corrigir o custo médio
+  de uma variação (ex.: cadastrado errado), com justificativa e registro de auditoria.
+  A correção **não afeta o lucro de vendas já realizadas** nem a quantidade em estoque;
+  vale para novas vendas e para o valor de estoque atual. Só Admin e Gestor.
+
+### Alterado
+- **Custo congelado por venda** — cada venda passa a guardar o custo do momento
+  (snapshot em `sale_items.unit_cost`), e os relatórios de lucro usam esse valor. Assim,
+  alterações futuras de custo não mudam o lucro de vendas passadas. Vendas anteriores foram
+  preenchidas (backfill) com o custo médio atual da variação. Ver `docs/features/023-cost-snapshot-and-correction.md`.
+
 ## [1.2.1] — 2026-09-03
 
 ### Corrigido
